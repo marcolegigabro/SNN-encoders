@@ -1,0 +1,23 @@
+[
+  {
+    "n_bits": 16,
+    "code_probe_acc": 0.8013333333333333,
+    "cnn_acc_original": 0.9647,
+    "cnn_acc_reconstructed": 0.6993,
+    "semantic_retention": 0.7248885663936976
+  },
+  {
+    "n_bits": 128,
+    "code_probe_acc": 0.911,
+    "cnn_acc_original": 0.9647,
+    "cnn_acc_reconstructed": 0.8815,
+    "semantic_retention": 0.9137555716803151
+  },
+  {
+    "n_bits": 1024,
+    "code_probe_acc": 0.9516666666666667,
+    "cnn_acc_original": 0.9647,
+    "cnn_acc_reconstructed": 0.9077,
+    "semantic_retention": 0.9409142738675236
+  }
+]

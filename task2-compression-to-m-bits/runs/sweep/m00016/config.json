@@ -1,0 +1,20 @@
+{
+  "n_bits": 16,
+  "n_bins": 16,
+  "width": 32,
+  "hidden": 256,
+  "beta": 0.9,
+  "epochs": 20,
+  "batch_size": 128,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "pos_weight": 1.0,
+  "w_bce": 1.0,
+  "w_dice": 1.0,
+  "w_psp": 20.0,
+  "w_frame": 0.3,
+  "tau": 3.0,
+  "train_subset": 0,
+  "seed": 0,
+  "workers": 6
+}
