@@ -1,0 +1,22 @@
+# environments
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# datasets (large, downloaded with scripts/download_datasets.py)
+# no trailing slash: `data` may be a symlink to a shared dataset folder,
+# and `data/` would not match a symlink
+data
+
+# run artefacts
+logs/
+results/
+checkpoints/
+*.pt
+*.ckpt
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
