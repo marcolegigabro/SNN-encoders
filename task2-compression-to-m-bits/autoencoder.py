@@ -9,8 +9,9 @@ different spike sources (homogeneous Poisson, inhomogeneous Poisson,
 bursty/renewal, periodic).
 
 Design choices (mirroring FSVAE / LTC ideas discussed):
-  - LIF neuron with surrogate gradient (same as Wu et al. 2019 / Zheng et al. 2021,
-    used in FSVAE) for backprop through spikes.
+  - LIF neurons come from snnTorch (snn.Leaky) with a rectangular surrogate
+    gradient (Wu et al. 2019 / Zheng et al. 2021, used in FSVAE), rather than
+    a hand-rolled autograd Function.
   - The m-bit bottleneck is produced by a dedicated readout layer of m LIF
     neurons whose *last-timestep* membrane potential is thresholded and
     trained with a Straight-Through Estimator (STE), exactly like the
@@ -31,63 +32,59 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import snntorch as snn
+from snntorch import surrogate
+
 
 # ----------------------------------------------------------------------
 # 1. Surrogate-gradient spiking primitives
 # ----------------------------------------------------------------------
 
-class SurrogateSpike(torch.autograd.Function):
+def rectangular_surrogate(width=1.0):
     """
-    Heaviside firing function with a rectangular surrogate gradient,
-    same approximation used in FSVAE / Wu et al. 2019:
+    Boxcar surrogate gradient, the approximation used in FSVAE / Wu et al. 2019:
 
         forward:  o = H(u - V_th)
         backward: do/du = (1/a) * 1[|u - V_th| < a/2]
+
+    snnTorch hands the surrogate the already-shifted membrane (u - V_th), so
+    the indicator is simply on |input_|.
     """
 
-    @staticmethod
-    def forward(ctx, u, v_th, a):
-        ctx.save_for_backward(u, torch.tensor(v_th), torch.tensor(a))
-        return (u >= v_th).float()
+    def grad_fn(input_, grad_input, spikes):
+        return grad_input * (input_.abs() < (width / 2)).float() / width
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        u, v_th, a = ctx.saved_tensors
-        surrogate = (1.0 / a) * (torch.abs(u - v_th) < (a / 2)).float()
-        grad_u = grad_output * surrogate
-        return grad_u, None, None
+    return surrogate.custom_surrogate(grad_fn)
 
 
-spike_fn = SurrogateSpike.apply
-
-
-class LIFCell(nn.Module):
+def make_lif(beta, v_th, surrogate_width=1.0):
     """
-    Single leaky integrate-and-fire layer (iterative LIF, Wu et al. 2019).
+    Spiking LIF layer:  u_t = beta * u_{t-1} * (1 - o_{t-1}) + x_t
 
-        u_t = tau_decay * u_{t-1} * (1 - o_{t-1}) + x_t
-        o_t = H(u_t - V_th)
-
-    Works on arbitrary feature shape; call once per timestep and pass the
-    membrane potential + spike back in for the next step (stateful).
+    reset_mechanism="zero" reproduces the reset-to-zero behaviour of the
+    original hand-rolled cell. One difference worth knowing: snnTorch zeroes
+    the state *after* integrating the incoming current, so on a timestep that
+    follows a spike the input is discarded, whereas the hand-rolled cell zeroed
+    only the decayed membrane and kept the input.
     """
+    return snn.Leaky(
+        beta=beta,
+        threshold=v_th,
+        spike_grad=rectangular_surrogate(surrogate_width),
+        reset_mechanism="zero",
+        init_hidden=False,
+    )
 
-    def __init__(self, tau_decay=0.5, v_th=1.0, surrogate_width=1.0):
-        super().__init__()
-        self.tau_decay = tau_decay
-        self.v_th = v_th
-        self.a = surrogate_width
 
-    def forward(self, x_t, u_prev, o_prev):
-        u_t = self.tau_decay * u_prev * (1.0 - o_prev) + x_t
-        o_t = spike_fn(u_t, self.v_th, self.a)
-        return u_t, o_t
+def make_integrator(beta):
+    """
+    Non-firing leaky integrator:  u_t = beta * u_{t-1} + x_t
 
-    @staticmethod
-    def init_state(shape, device):
-        u0 = torch.zeros(shape, device=device)
-        o0 = torch.zeros(shape, device=device)
-        return u0, o0
+    reset_mechanism="none" means the membrane is never reset, so the emitted
+    spikes can be ignored and only the membrane potential read out. This is
+    FSVAE's spike-to-image trick (Eq. 19), used here for the encoder readout.
+    """
+    return snn.Leaky(beta=beta, reset_mechanism="none", init_hidden=False)
 
 
 # ----------------------------------------------------------------------
@@ -138,27 +135,26 @@ class SNNEncoder(nn.Module):
         super().__init__()
         self.fc1 = nn.Linear(c_in, hidden)
         self.fc2 = nn.Linear(hidden, m)
-        self.lif1 = LIFCell(tau_decay, v_th)
-        self.lif_out_tau = tau_decay  # for the non-spiking readout neuron
+        self.lif1 = make_lif(tau_decay, v_th)
+        self.readout = make_integrator(tau_decay)
         self.m = m
 
     def forward(self, x):
         # x: (T, B, C_in) binary spike train
-        T, B, _ = x.shape
-        device = x.device
+        T = x.shape[0]
 
-        u1, o1 = LIFCell.init_state((B, self.fc1.out_features), device)
-        u_out = torch.zeros(B, self.m, device=device)  # non-firing readout
+        mem1 = self.lif1.init_leaky()
+        mem_out = self.readout.init_leaky()
 
         for t in range(T):
             cur1 = self.fc1(x[t])
-            u1, o1 = self.lif1(cur1, u1, o1)
-            cur2 = self.fc2(o1)
+            spk1, mem1 = self.lif1(cur1, mem1)
+            cur2 = self.fc2(spk1)
             # accumulate membrane potential of a non-firing readout neuron,
             # same trick as FSVAE's spike-to-image decoding (Eq. 19)
-            u_out = self.lif_out_tau * u_out + cur2
+            _, mem_out = self.readout(cur2, mem_out)
 
-        logits = u_out  # real-valued "evidence" per bit, after T steps
+        logits = mem_out  # real-valued "evidence" per bit, after T steps
         probs = torch.sigmoid(logits)
         # STE: forward pass uses a hard threshold at 0.5, backward pass
         # flows through the sigmoid as if it were the identity
@@ -187,26 +183,26 @@ class SNNDecoder(nn.Module):
         self.c_out = c_out
         self.fc_in = nn.Linear(m + c_out, hidden)
         self.fc_out = nn.Linear(hidden, c_out)
-        self.lif1 = LIFCell(tau_decay, v_th)
-        self.lif2 = LIFCell(tau_decay, v_th)
+        self.lif1 = make_lif(tau_decay, v_th)
+        self.lif2 = make_lif(tau_decay, v_th)
 
     def forward(self, b):
-        B, m = b.shape
+        B, _ = b.shape
         device = b.device
 
-        u1, o1 = LIFCell.init_state((B, self.fc_in.out_features), device)
-        u2, o2 = LIFCell.init_state((B, self.c_out), device)
+        mem1 = self.lif1.init_leaky()
+        mem2 = self.lif2.init_leaky()
         x_prev = torch.zeros(B, self.c_out, device=device)
 
         outputs = []
         for t in range(self.T):
             inp = torch.cat([b, x_prev], dim=-1)
             cur1 = self.fc_in(inp)
-            u1, o1 = self.lif1(cur1, u1, o1)
-            cur2 = self.fc_out(o1)
-            u2, o2 = self.lif2(cur2, u2, o2)
-            outputs.append(o2)
-            x_prev = o2
+            spk1, mem1 = self.lif1(cur1, mem1)
+            cur2 = self.fc_out(spk1)
+            spk2, mem2 = self.lif2(cur2, mem2)
+            outputs.append(spk2)
+            x_prev = spk2
 
         return torch.stack(outputs, dim=0)  # (T, B, c_out)
 
