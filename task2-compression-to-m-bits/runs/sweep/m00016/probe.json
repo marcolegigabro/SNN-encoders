@@ -1,0 +1,7 @@
+{
+  "n_bits": 16,
+  "code_probe_acc": 0.8013333333333333,
+  "cnn_acc_original": 0.9647,
+  "cnn_acc_reconstructed": 0.6993,
+  "semantic_retention": 0.7248885663936976
+}
