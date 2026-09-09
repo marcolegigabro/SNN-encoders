@@ -9,6 +9,12 @@ bottleneck is replaced by the pipeline from
     Lei, Hassani & Saeedi Bidokhti, "Approaching Rate-Distortion Limits in
     Neural Compression with Lattice Transform Coding", ICLR 2025.
 
+This module is deliberately **self-contained**: it shares no code with
+``autoencoder.py`` (which is being reworked onto snnTorch on its own
+schedule). The SNN primitives here are a small torch-only reimplementation;
+porting them to snnTorch later, to match ``autoencoder.py``, is a mechanical
+change that does not touch the lattice/entropy code.
+
 Pipeline
 --------
     x_{1:T}  --[ SNN encoder (LIF stack) + analysis MLP g_a ]-->  y in R^{dy}
@@ -39,10 +45,6 @@ Backprop through the non-differentiable quantizer: STE (paper Eq. 4) or
 dithered / additive-uniform-noise over the Voronoi cell (paper Eq. 6),
 selected with ``--quant-backward {ste,dither}``.
 
-Shared SNN primitives (LIF cell, PSP distortion, spike sources, the
-autoregressive decoder, the Bernoulli R(D) anchor) are imported from
-``autoencoder.py`` -- see the README note about deliberate duplication.
-
     python ltc_autoencoder.py --help
 """
 
@@ -50,31 +52,368 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 from dataclasses import dataclass, replace
-from typing import Sequence
+from pathlib import Path
+from typing import Iterator, Sequence
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
 
-from autoencoder import (
-    LIFCell,
-    SNNDecoder,
-    psp_mse,
-    hamming_distortion,
-    binary_entropy,
-    bernoulli_rate_distortion,
-    make_source,
-    SYNTH_NAMES,
-    REAL_NAMES,
-)
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+# ======================================================================
+# PART A -- self-contained SNN primitives, distortion, spike sources
+# ======================================================================
+
+# ----------------------------------------------------------------------
+# A1. Surrogate-gradient spiking primitives
+# ----------------------------------------------------------------------
+
+class SurrogateSpike(torch.autograd.Function):
+    """
+    Heaviside firing with a rectangular surrogate gradient (Wu et al. 2019
+    / FSVAE):  forward o = H(u - v_th),  backward do/du = (1/a) 1[|u-v_th| < a/2].
+    v_th and a are kept as python floats so backward never mixes a CPU
+    scalar tensor with a CUDA u.
+    """
+
+    @staticmethod
+    def forward(ctx, u, v_th, a):
+        ctx.save_for_backward(u)
+        ctx.v_th = float(v_th)
+        ctx.a = float(a)
+        return (u >= v_th).float()
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        (u,) = ctx.saved_tensors
+        surrogate = (1.0 / ctx.a) * (torch.abs(u - ctx.v_th) < (ctx.a / 2)).float()
+        return grad_output * surrogate, None, None
+
+
+spike_fn = SurrogateSpike.apply
+
+
+class LIFCell(nn.Module):
+    """Iterative leaky integrate-and-fire layer (Wu et al. 2019)."""
+
+    def __init__(self, tau_decay=0.5, v_th=1.0, surrogate_width=1.0):
+        super().__init__()
+        self.tau_decay = tau_decay
+        self.v_th = v_th
+        self.a = surrogate_width
+
+    def forward(self, x_t, u_prev, o_prev):
+        u_t = self.tau_decay * u_prev * (1.0 - o_prev) + x_t
+        o_t = spike_fn(u_t, self.v_th, self.a)
+        return u_t, o_t
+
+    @staticmethod
+    def init_state(shape, device):
+        return torch.zeros(shape, device=device), torch.zeros(shape, device=device)
 
 
 # ----------------------------------------------------------------------
-# 1. Lattice closest-point (CVP) routines
-#    Each returns the closest point in the *canonical* lattice (the one
-#    whose generator is `_lattice_generator` below); unit-volume scaling
-#    is applied by LatticeCVP so different lattices are comparable.
+# A2. Distortion metrics + information-theory anchors
+# ----------------------------------------------------------------------
+
+def psp_filter(spike_train, tau_syn=4.0):
+    """Recursive post-synaptic-potential filter (FSVAE / MMD-GLM)."""
+    T = spike_train.shape[0]
+    decay = 1.0 - 1.0 / tau_syn
+    gain = 1.0 / tau_syn
+    psp = torch.zeros_like(spike_train)
+    running = torch.zeros_like(spike_train[0])
+    for t in range(T):
+        running = decay * running + gain * spike_train[t]
+        psp[t] = running
+    return psp
+
+
+def psp_mse(x, x_hat, tau_syn=4.0):
+    return F.mse_loss(psp_filter(x_hat, tau_syn), psp_filter(x, tau_syn))
+
+
+def hamming_distortion(x, x_hat):
+    """Fraction of binary samples that differ (raw bit-error rate)."""
+    return (x_hat.round().clamp(0.0, 1.0) - x).abs().mean()
+
+
+def binary_entropy(p: float) -> float:
+    p = min(max(p, 1e-12), 1.0 - 1e-12)
+    return -p * math.log2(p) - (1.0 - p) * math.log2(1.0 - p)
+
+
+def bernoulli_rate_distortion(p: float, D: float) -> float:
+    """R(D) = H(p) - H(D) for a memoryless Bernoulli(p) source, Hamming distortion."""
+    if D >= min(p, 1.0 - p):
+        return 0.0
+    return max(binary_entropy(p) - binary_entropy(D), 0.0)
+
+
+# ----------------------------------------------------------------------
+# A3. Synthetic spike-source generators
+# ----------------------------------------------------------------------
+
+def gen_homogeneous_poisson(T, B, C, rate, device="cpu"):
+    return torch.bernoulli(torch.full((T, B, C), rate, device=device))
+
+
+def gen_inhomogeneous_poisson(T, B, C, base_rate=0.05, amp=0.15, period=None, device="cpu"):
+    if period is None:
+        period = T
+    t_idx = torch.arange(T, device=device).float()
+    rate_t = base_rate + amp * (0.5 * (1 + torch.sin(2 * math.pi * t_idx / period)))
+    rate_t = rate_t.clamp(0.0, 1.0).view(T, 1, 1).expand(T, B, C)
+    return torch.bernoulli(rate_t)
+
+
+def gen_bursty_renewal(T, B, C, burst_prob=0.03, refractory=4, device="cpu"):
+    x = torch.zeros(T, B, C, device=device)
+    refractory_left = torch.zeros(B, C, device=device)
+    for t in range(T):
+        can_fire = (refractory_left <= 0).float()
+        fire = torch.bernoulli(torch.full((B, C), burst_prob, device=device)) * can_fire
+        x[t] = fire
+        refractory_left = torch.where(
+            fire.bool(),
+            torch.full_like(refractory_left, refractory),
+            (refractory_left - 1).clamp(min=0),
+        )
+    return x
+
+
+def gen_periodic(T, B, C, period=10, jitter=0.0, device="cpu"):
+    x = torch.zeros(T, B, C, device=device)
+    for start in range(0, T, period):
+        if jitter > 0:
+            offsets = torch.randint(
+                low=max(-jitter, -start), high=jitter + 1, size=(B, C), device=device
+            )
+        else:
+            offsets = torch.zeros(B, C, dtype=torch.long, device=device)
+        idx = (start + offsets).clamp(0, T - 1)
+        x.scatter_(0, idx.unsqueeze(0), 1.0)
+    return x
+
+
+SYNTH_GENERATORS = {
+    "poisson_homog": lambda T, B, C, device: gen_homogeneous_poisson(T, B, C, rate=0.1, device=device),
+    "poisson_inhomog": lambda T, B, C, device: gen_inhomogeneous_poisson(T, B, C, device=device),
+    "bursty_renewal": lambda T, B, C, device: gen_bursty_renewal(T, B, C, device=device),
+    "periodic": lambda T, B, C, device: gen_periodic(T, B, C, period=8, jitter=1, device=device),
+}
+
+
+# ----------------------------------------------------------------------
+# A4. Source interface: synthetic generators + real tonic datasets
+# ----------------------------------------------------------------------
+
+class Source:
+    """
+    name, feature_dim (flattened N), T;
+    train_batches / eval_batches(n, device) -> Iterator[(T, B, N) float in {0,1}];
+    spike_prob(device) -> empirical mean spike probability.
+    """
+
+    name: str
+    feature_dim: int
+    T: int
+
+    def train_batches(self, n_batches: int, device) -> Iterator[torch.Tensor]:
+        raise NotImplementedError
+
+    def eval_batches(self, n_batches: int, device) -> Iterator[torch.Tensor]:
+        raise NotImplementedError
+
+    def spike_prob(self, device="cpu", n_batches: int = 8) -> float:
+        total, count = 0.0, 0
+        for x in self.eval_batches(n_batches, device):
+            total += x.mean().item()
+            count += 1
+        return total / max(count, 1)
+
+
+class SyntheticSource(Source):
+    def __init__(self, name, T, channels, batch_size, seed=0):
+        self.name = name
+        self.T = T
+        self.channels = channels
+        self.feature_dim = channels
+        self.batch_size = batch_size
+        self._gen = SYNTH_GENERATORS[name]
+        self._seed = seed
+
+    def train_batches(self, n_batches, device):
+        for _ in range(n_batches):
+            yield self._gen(self.T, self.batch_size, self.channels, device)
+
+    def eval_batches(self, n_batches, device):
+        state = torch.random.get_rng_state()
+        torch.manual_seed(self._seed + 4242)
+        batches = [self._gen(self.T, self.batch_size, self.channels, device)
+                   for _ in range(n_batches)]
+        torch.random.set_rng_state(state)
+        return iter(batches)
+
+
+_TONIC_DATASETS = {"nmnist": "NMNIST", "shd": "SHD", "dvsgesture": "DVSGesture"}
+
+
+def resolve_data_root(explicit: str | None = None) -> Path:
+    if explicit:
+        return Path(explicit).resolve()
+    env = os.environ.get("SNN_DATA_ROOT")
+    if env:
+        return Path(env).resolve()
+    return (REPO_ROOT / "data").resolve()
+
+
+def _time_first_collate(batch, T, binarize):
+    """(B, T, *) samples -> (T, B, N) binary, flattened + transposed once here."""
+    frames = []
+    for item in batch:
+        frame = item[0] if isinstance(item, (tuple, list)) else item
+        frames.append(torch.as_tensor(frame, dtype=torch.float32).reshape(T, -1))
+    x = torch.stack(frames, dim=1)
+    if binarize:
+        x = (x > 0).float()
+    return x
+
+
+class RealSource(Source):
+    """An event dataset (N-MNIST / SHD / DVS-Gesture) binned to T frames with tonic."""
+
+    def __init__(self, name, T, batch_size, data_root=None, binarize=True,
+                 num_workers=0, cache_dir=None):
+        try:
+            import tonic
+            import tonic.transforms as tonic_transforms
+        except ModuleNotFoundError as exc:  # pragma: no cover - env dependent
+            raise ModuleNotFoundError(
+                "real spike sources need tonic + h5py -- `uv pip install tonic h5py`"
+            ) from exc
+
+        cls = getattr(tonic.datasets, _TONIC_DATASETS[name])
+        root = str(resolve_data_root(data_root) / name)
+        transform = tonic_transforms.ToFrame(sensor_size=cls.sensor_size, n_time_bins=T)
+
+        train_ds = cls(save_to=root, train=True, transform=transform)
+        test_ds = cls(save_to=root, train=False, transform=transform)
+
+        if cache_dir:
+            from tonic import DiskCachedDataset
+            base = Path(cache_dir) / name
+            train_ds = DiskCachedDataset(train_ds, cache_path=str(base / "train"))
+            test_ds = DiskCachedDataset(test_ds, cache_path=str(base / "test"))
+
+        self.name = name
+        self.T = T
+        sample = torch.as_tensor(train_ds[0][0], dtype=torch.float32).reshape(T, -1)
+        self.feature_dim = int(sample.shape[1])
+
+        def collate(b):
+            return _time_first_collate(b, T, binarize)
+
+        self._train_loader = DataLoader(
+            train_ds, batch_size=batch_size, shuffle=True, drop_last=True,
+            collate_fn=collate, num_workers=num_workers,
+        )
+        self._test_loader = DataLoader(
+            test_ds, batch_size=batch_size, shuffle=False, drop_last=True,
+            collate_fn=collate, num_workers=num_workers,
+        )
+
+    @staticmethod
+    def _take(loader, n_batches, device):
+        it = iter(loader)
+        for _ in range(n_batches):
+            try:
+                x = next(it)
+            except StopIteration:
+                it = iter(loader)
+                x = next(it)
+            yield x.to(device)
+
+    def train_batches(self, n_batches, device):
+        return self._take(self._train_loader, n_batches, device)
+
+    def eval_batches(self, n_batches, device):
+        return self._take(self._test_loader, n_batches, device)
+
+
+SYNTH_NAMES = tuple(SYNTH_GENERATORS)
+REAL_NAMES = tuple(_TONIC_DATASETS)
+
+
+def make_source(name: str, cfg: "LTCConfig") -> Source:
+    if name in SYNTH_GENERATORS:
+        return SyntheticSource(name, cfg.T, cfg.channels, cfg.batch_size, seed=cfg.seed)
+    if name in _TONIC_DATASETS:
+        return RealSource(name, cfg.T, cfg.batch_size, data_root=cfg.data_root,
+                          binarize=cfg.binarize, num_workers=cfg.num_workers,
+                          cache_dir=cfg.cache_dir)
+    raise ValueError(
+        f"unknown source {name!r}; synthetic {list(SYNTH_NAMES)} or real {list(REAL_NAMES)}"
+    )
+
+
+# ----------------------------------------------------------------------
+# A5. Autoregressive SNN decoder
+# ----------------------------------------------------------------------
+
+class SNNDecoder(nn.Module):
+    """
+    code b -> x_hat_{1:T}. Autoregressive LIF stack; the code is injected as
+    a constant context every step ("constant") or only at t=0 ("first"),
+    concatenated with the previously generated output spike.
+    """
+
+    def __init__(self, m, hidden, c_out, T, tau_decay=0.5, v_th=1.0,
+                 surrogate_width=1.0, inject="constant"):
+        super().__init__()
+        if inject not in ("constant", "first"):
+            raise ValueError(f"inject must be 'constant' or 'first', got {inject!r}")
+        self.inject = inject
+        self.T = T
+        self.c_out = c_out
+        self.m = m
+        self.fc_in = nn.Linear(m + c_out, hidden)
+        self.fc_out = nn.Linear(hidden, c_out)
+        self.lif1 = LIFCell(tau_decay, v_th, surrogate_width)
+        self.lif2 = LIFCell(tau_decay, v_th, surrogate_width)
+
+    def forward(self, b):
+        B, _ = b.shape
+        device = b.device
+        u1, o1 = LIFCell.init_state((B, self.fc_in.out_features), device)
+        u2, o2 = LIFCell.init_state((B, self.c_out), device)
+        x_prev = torch.zeros(B, self.c_out, device=device)
+        zeros_code = torch.zeros_like(b)
+
+        outputs = []
+        for t in range(self.T):
+            code = b if (self.inject == "constant" or t == 0) else zeros_code
+            u1, o1 = self.lif1(self.fc_in(torch.cat([code, x_prev], dim=-1)), u1, o1)
+            u2, o2 = self.lif2(self.fc_out(o1), u2, o2)
+            outputs.append(o2)
+            x_prev = o2
+
+        return torch.stack(outputs, dim=0)
+
+
+# ======================================================================
+# PART B -- Lattice Transform Coding
+# ======================================================================
+
+# ----------------------------------------------------------------------
+# B1. Lattice closest-point (CVP) routines
+#     Each returns the closest point in the *canonical* lattice; unit-volume
+#     rescaling is applied by LatticeCVP so lattices are comparable.
 # ----------------------------------------------------------------------
 
 def _cvp_Zn(z, n):
@@ -116,8 +455,8 @@ _A2_BASIS = [[1.0, 0.0], [0.5, math.sqrt(3.0) / 2.0]]
 
 def _cvp_A2(z, n):
     """Closest point of the 2-D hexagonal lattice (reduced 60-degree basis)."""
-    basis = z.new_tensor(_A2_BASIS)                 # rows = basis vectors
-    coords = z @ torch.linalg.inv(basis)           # point = coords @ basis
+    basis = z.new_tensor(_A2_BASIS)
+    coords = z @ torch.linalg.inv(basis)
     base = torch.floor(coords)
     best = None
     best_d = None
@@ -175,9 +514,8 @@ def _lattice_generator(name: str, n: int) -> torch.Tensor:
 
 class LatticeCVP(nn.Module):
     """
-    Closest-point search + Voronoi-cell sampling for a lattice, rescaled so
-    its fundamental cell has unit volume (paper assumes det(G G^T) = 1 so
-    rates/distortions are comparable across lattices).
+    Closest-point search + Voronoi-cell sampling, rescaled so the
+    fundamental cell has unit volume (paper assumes det(G G^T) = 1).
     """
 
     def __init__(self, name: str, n: int):
@@ -189,7 +527,7 @@ class LatticeCVP(nn.Module):
         g = _lattice_generator(name, n)
         covol = float(abs(torch.det(g)))
         scale = covol ** (1.0 / n)
-        self.register_buffer("gen_unit", g / scale)     # generates the unit-vol lattice
+        self.register_buffer("gen_unit", g / scale)
         self.register_buffer("scale", torch.tensor(scale))
 
     def _cvp_canon(self, z):
@@ -207,16 +545,15 @@ class LatticeCVP(nn.Module):
 
 
 # ----------------------------------------------------------------------
-# 2. Bottlenecks
+# B2. Bottlenecks
 # ----------------------------------------------------------------------
 
 class EntropyLatticeBottleneck(nn.Module):
     """
     Variable-rate LTC (paper Sec. 4.1). The latent y in R^{dy} is split
     into dy/n blocks, each quantized with the n-D lattice (a product
-    lattice along the latent, as the paper does for image channels). A
-    learned joint Gaussian p_y gives the rate via a Monte-Carlo estimate
-    of the cell probability (paper Eqs. 5-6):
+    lattice along the latent). A learned joint Gaussian p_y gives the rate
+    via a Monte-Carlo estimate of the cell probability (paper Eqs. 5-6):
 
         p_yhat(yhat) = E_{u ~ Unif(V(0))}[ p_y(yhat + u) ]
         rate(bits)   = -log2 p_yhat(yhat)      (summed over the dy vector)
@@ -240,7 +577,6 @@ class EntropyLatticeBottleneck(nn.Module):
         if entropy == "full":
             self.tril = nn.Parameter(torch.zeros(latent_dim, latent_dim))
 
-    # --- joint density p_y -------------------------------------------------
     def _dist(self):
         diag = F.softplus(self.log_scale) + 1e-4
         if self.entropy == "full":
@@ -257,7 +593,7 @@ class EntropyLatticeBottleneck(nn.Module):
     def _rate_bits(self, point):
         """-log2 E_u[p_y(point + u)] via Monte-Carlo, per sample -> (B,)."""
         u = self._dither((self.mc_samples, point.shape[0]), point.device)
-        logp = self._dist().log_prob(point.unsqueeze(0) + u)        # (mc, B)
+        logp = self._dist().log_prob(point.unsqueeze(0) + u)
         log_cell = torch.logsumexp(logp, dim=0) - math.log(self.mc_samples)
         return -log_cell / math.log(2.0)
 
@@ -266,26 +602,24 @@ class EntropyLatticeBottleneck(nn.Module):
         q_hard = self.q.closest(y.view(B, self.blocks, self.n)).view(B, self.latent_dim)
 
         if self.backward == "dither" and self.training:
-            point = y + self._dither((B,), y.device)               # continuous relaxation
+            point = y + self._dither((B,), y.device)
             y_hat = point
         else:
-            y_hat = y + (q_hard - y).detach()                      # STE (Eq. 4)
+            y_hat = y + (q_hard - y).detach()          # STE (Eq. 4)
             point = y_hat
 
-        rate_bits = self._rate_bits(point)
-        return y_hat, rate_bits
+        return y_hat, self._rate_bits(point)
 
 
 class NestedLatticeBottleneck(nn.Module):
     """
     Fixed-rate LTC with self-similar nested lattices (paper Sec. 4.2).
 
-        y_f    = Q_Lf(y)                     (fine lattice)
-        y_hat  = y_f - Gamma * Q_Lf(y_f / Gamma)   (coset leader in V(Lc))
+        y_f    = Q_Lf(y)
+        y_hat  = y_f - Gamma * Q_Lf(y_f / Gamma)     (coset leader in V(Lc))
 
-    Rate is fixed by construction: log2 |Lf / Lc| = n * log2(Gamma) bits
-    per block, dy * log2(Gamma) total. No entropy model. Trained with STE
-    (paper: "We use STE to train the BLTC models").
+    Rate is fixed: n * log2(Gamma) bits per block, dy * log2(Gamma) total.
+    No entropy model. Trained with STE.
     """
 
     def __init__(self, lattice, n, latent_dim, nesting_ratio):
@@ -302,12 +636,12 @@ class NestedLatticeBottleneck(nn.Module):
     def forward(self, y):
         B = y.shape[0]
         s = self.q.scale
-        yb = y.view(B, self.blocks, self.n) * s                    # canonical space
+        yb = y.view(B, self.blocks, self.n) * s
         y_f = self.q._cvp_canon(yb)
         coarse = self.gamma * self.q._cvp_canon(y_f / self.gamma)
         q_hard = ((y_f - coarse) / s).view(B, self.latent_dim)
 
-        y_hat = y + (q_hard - y).detach()                          # STE
+        y_hat = y + (q_hard - y).detach()              # STE
         rate_bits = y.new_full((B,), self.total_bits)
         return y_hat, rate_bits
 
@@ -319,7 +653,6 @@ class NestedLatticeBottleneck(nn.Module):
             yb = y.view(B, self.blocks, self.n) * s
             y_f = self.q._cvp_canon(yb)
             resid = y_f - self.gamma * self.q._cvp_canon(y_f / self.gamma)
-            # resid lies on Lf inside V(Lc); mod-Gamma of its lattice coords is the index
             coords = torch.linalg.solve(
                 self.q.gen_unit.T.to(y) * s, resid.unsqueeze(-1)
             ).squeeze(-1)
@@ -327,17 +660,14 @@ class NestedLatticeBottleneck(nn.Module):
 
 
 # ----------------------------------------------------------------------
-# 3. SNN encoder that emits a real latent (no threshold)
+# B3. SNN encoder emitting a real latent, and the full autoencoder
 # ----------------------------------------------------------------------
 
 class SNNLatentEncoder(nn.Module):
     """
-    x_{1:T} (T, B, C_in) -> y in R^{latent_dim}
-
-    Same LIF stack as autoencoder.SNNEncoder, but the readout membrane
-    potential is *not* thresholded: it is averaged over T and (optionally)
-    passed through an analysis MLP g_a (paper: 2 hidden layers, softplus),
-    giving the continuous latent the lattice quantizer expects.
+    x_{1:T} (T, B, C_in) -> y in R^{latent_dim}.  LIF stack; the readout
+    membrane potential is averaged over T (not thresholded) and optionally
+    passed through an analysis MLP g_a (paper: 2 hidden layers, softplus).
     """
 
     def __init__(self, c_in, hidden, latent_dim, tau_decay=0.5, v_th=1.0,
@@ -364,7 +694,7 @@ class SNNLatentEncoder(nn.Module):
         for t in range(T):
             u1, o1 = self.lif1(self.fc1(x[t]), u1, o1)
             acc = self.readout_tau * acc + self.fc2(o1)
-        y = acc / T                                   # T-independent scale
+        y = acc / T
         if self.g_a is not None:
             y = self.g_a(y)
         return y
@@ -400,13 +730,13 @@ class SNNLatticeAutoencoder(nn.Module):
         return x_hat, y, y_hat, rate_bits
 
 
-# ----------------------------------------------------------------------
-# 4. Config
-# ----------------------------------------------------------------------
+# ======================================================================
+# PART C -- config, training, sweep, CLI
+# ======================================================================
 
 @dataclass
 class LTCConfig:
-    # --- source (consumed by autoencoder.make_source) ---
+    # --- source ---
     sources: tuple = ("poisson_homog", "bursty_renewal")
     T: int = 32
     channels: int = 1
@@ -426,7 +756,7 @@ class LTCConfig:
     # --- bottleneck ---
     quantizer: str = "entropy"          # entropy | nested | scalar
     lattice: str = "E8"                 # Zn | Dn | Dn_star | A2 | E8
-    lattice_n: int = 8                  # lattice dim for the Zn/Dn/Dn_star family
+    lattice_n: int = 8
     latent_dim: int = 8
     quant_backward: str = "ste"         # ste | dither
     entropy: str = "diag"              # diag | full
@@ -443,16 +773,10 @@ class LTCConfig:
     log_every: int = 50
 
 
-# ----------------------------------------------------------------------
-# 5. Train one operating point
-# ----------------------------------------------------------------------
-
 def train_one_point(source, cfg: LTCConfig, lam: float | None = None,
                     gamma: float | None = None):
     torch.manual_seed(cfg.seed)
-    point_cfg = cfg
-    if gamma is not None:
-        point_cfg = replace(cfg, nesting_ratio=gamma)
+    point_cfg = cfg if gamma is None else replace(cfg, nesting_ratio=gamma)
 
     model = SNNLatticeAutoencoder(point_cfg, source.feature_dim).to(cfg.device)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
@@ -465,10 +789,7 @@ def train_one_point(source, cfg: LTCConfig, lam: float | None = None,
             x_hat, _, _, rate_bits = model(x)
             dist = psp_mse(x, x_hat, cfg.tau_syn)
             rate_bpp = rate_bits.mean() / norm
-            if point_cfg.quantizer == "nested":
-                loss = dist
-            else:
-                loss = lam * dist + rate_bpp
+            loss = dist if point_cfg.quantizer == "nested" else lam * dist + rate_bpp
 
             opt.zero_grad()
             loss.backward()
@@ -493,16 +814,8 @@ def train_one_point(source, cfg: LTCConfig, lam: float | None = None,
             d_ham += hamming_distortion(x, x_hat).item()
             r_bpp += (rate_bits.mean() / norm).item()
             nb += 1
-    return {
-        "psp_mse": d_psp / nb,
-        "hamming": d_ham / nb,
-        "rate_bpp": r_bpp / nb,
-    }
+    return {"psp_mse": d_psp / nb, "hamming": d_ham / nb, "rate_bpp": r_bpp / nb}
 
-
-# ----------------------------------------------------------------------
-# 6. Rate-distortion sweep
-# ----------------------------------------------------------------------
 
 def run_ltc_sweep(cfg: LTCConfig):
     results = {}
@@ -512,12 +825,12 @@ def run_ltc_sweep(cfg: LTCConfig):
         print(f"\n--- source={name} (N={source.feature_dim}, T={cfg.T}, "
               f"p_hat={p:.4f}, H(p)={binary_entropy(p):.4f} bits) ---", flush=True)
 
-        points = []
         if cfg.quantizer == "nested":
             knobs = [("gamma", g, None, g) for g in cfg.nesting_ratios]
         else:
             knobs = [("lambda", lam, lam, None) for lam in cfg.lambdas]
 
+        points = []
         for label, value, lam, gamma in knobs:
             m = train_one_point(source, cfg, lam=lam, gamma=gamma)
             m["memoryless_bound_R"] = bernoulli_rate_distortion(p, m["hamming"])
@@ -529,10 +842,6 @@ def run_ltc_sweep(cfg: LTCConfig):
         results[name] = {"spike_prob": p, "points": points}
     return results
 
-
-# ----------------------------------------------------------------------
-# 7. CLI
-# ----------------------------------------------------------------------
 
 def build_arg_parser() -> argparse.ArgumentParser:
     d = LTCConfig()
@@ -546,12 +855,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--lattice-n", type=int, default=d.lattice_n,
                    help="lattice dim for Zn/Dn/Dn_star (A2->2, E8->8 forced)")
     p.add_argument("--latent-dim", type=int, default=d.latent_dim,
-                   help="analysis-transform output dim dy (must be a multiple of the lattice dim)")
+                   help="analysis-transform output dim dy (multiple of the lattice dim)")
     p.add_argument("--quant-backward", choices=["ste", "dither"], default=d.quant_backward)
     p.add_argument("--entropy", choices=["diag", "full"], default=d.entropy,
                    help="joint density p_y: diagonal or full-covariance Gaussian")
-    p.add_argument("--mc-samples", type=int, default=d.mc_samples,
-                   help="Monte-Carlo samples for the cell-probability rate estimate")
+    p.add_argument("--mc-samples", type=int, default=d.mc_samples)
     p.add_argument("--lambdas", type=float, nargs="+", default=list(d.lambdas),
                    help="R-D tradeoff multipliers to sweep (entropy/scalar mode)")
     p.add_argument("--nesting-ratios", type=float, nargs="+", default=list(d.nesting_ratios),
