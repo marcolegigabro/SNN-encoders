@@ -1,0 +1,82 @@
+{
+ "config": {
+  "out": "runs/baselines.json",
+  "n_neurons": 16,
+  "n_bins": 12,
+  "rate": 0.15,
+  "source": "iid",
+  "tau": 3.0,
+  "sigmas": "0.25,0.5,1.0,2.0,4.0",
+  "batch": 20000
+ },
+ "rows": [
+  {
+   "name": "zero_rate",
+   "rate_bits_per_bin": 0.0,
+   "sigma": null,
+   "channel_uses": 0,
+   "hamming": 0.14995285868644714,
+   "count_mse": 1.5301082134246826,
+   "van_rossum": 0.023786183446645737
+  },
+  {
+   "name": "oracle_count",
+   "rate_bits_per_bin": 0.19087350456303806,
+   "sigma": null,
+   "channel_uses": 16,
+   "hamming": 0.14995285868644714,
+   "count_mse": 0.0,
+   "van_rossum": 0.015966884791851044
+  },
+  {
+   "name": "analog_count",
+   "rate_bits_per_bin": 0.30439931236662926,
+   "sigma": 0.25,
+   "channel_uses": 16,
+   "count_mse_direct": 0.030134811997413635,
+   "hamming": 0.14995285868644714,
+   "count_mse": 0.030134811997413635,
+   "van_rossum": 0.016122490167617798
+  },
+  {
+   "name": "analog_count",
+   "rate_bits_per_bin": 0.22993635572528168,
+   "sigma": 0.5,
+   "channel_uses": 16,
+   "count_mse_direct": 0.20755493640899658,
+   "hamming": 0.14995285868644714,
+   "count_mse": 0.20755493640899658,
+   "van_rossum": 0.017025912180542946
+  },
+  {
+   "name": "analog_count",
+   "rate_bits_per_bin": 0.16259614506119818,
+   "sigma": 1.0,
+   "channel_uses": 16,
+   "count_mse_direct": 0.589880108833313,
+   "hamming": 0.14995285868644714,
+   "count_mse": 0.589880108833313,
+   "van_rossum": 0.018983768299221992
+  },
+  {
+   "name": "analog_count",
+   "rate_bits_per_bin": 0.1059563411489976,
+   "sigma": 2.0,
+   "channel_uses": 16,
+   "count_mse_direct": 1.0973074436187744,
+   "hamming": 0.14995285868644714,
+   "count_mse": 1.0973074436187744,
+   "van_rossum": 0.021576691418886185
+  },
+  {
+   "name": "analog_count",
+   "rate_bits_per_bin": 0.06333158342600705,
+   "sigma": 4.0,
+   "channel_uses": 16,
+   "count_mse_direct": 1.393946886062622,
+   "hamming": 0.14995285868644714,
+   "count_mse": 1.3939471244812012,
+   "van_rossum": 0.023090416565537453
+  }
+ ]
+}
