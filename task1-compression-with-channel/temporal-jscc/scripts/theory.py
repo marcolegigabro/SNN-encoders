@@ -77,13 +77,16 @@ for key, mode in (("van_rossum", "real"), ("van_rossum_binary", "binary")):
     out["checks"][f"{key}_max_rate_vs_word_entropy"] = [
         float(R.max()), float(T * th.binary_entropy(np.array([p]))[0])]
     print(f"{key} R(D): {len(R)} points in {time.time() - t0:.1f}s")
-# A restriction cannot help: at matched rate the binary-reproduction curve must
-# sit at or above the real-valued one.
+# Both curves are upper bounds on the same R(D), and the real-reproduction run
+# starts from the binary alphabet, so its estimate must be no looser: at matched
+# rate its distortion has to sit at or below the binary one. A negative margin
+# here means the reproduction-point optimisation is under-resolved, which is
+# exactly how a 512-point subsample failed.
 rr = np.asarray(out["van_rossum"]["rate_bits_per_bin"])
 dr = np.asarray(out["van_rossum"]["distortion"])
 rb = np.asarray(out["van_rossum_binary"]["rate_bits_per_bin"])
 db = np.asarray(out["van_rossum_binary"]["distortion"])
-out["checks"]["van_rossum_binary_above_real_min_margin"] = float(
+out["checks"]["van_rossum_real_no_looser_than_binary_min_margin"] = float(
     (db - np.interp(rb, rr[::-1], dr[::-1])).min())
 
 # --- capacities

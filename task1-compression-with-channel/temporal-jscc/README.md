@@ -123,19 +123,123 @@ scripts/
   visualize.py    all figures
 ```
 
+## The training budget, and why it is not a detail
+
+The first pilot ran at lr = 3e-4, the value task 2 uses, and produced a
+rate-distortion curve that was **flat at the zero-rate point** for Hamming: 0.150
+at every rate, exactly what emitting silence scores. It would have been easy to
+write that up as "learned coding cannot beat the trivial system on a memoryless
+source". It was a step size.
+
+The diagnostic that settled it, all at one point (K = 64, sigma = 1, Hamming,
+where the rate is 0.65 bits/bin against the source's h(p) = 0.61, so the rate is
+*ample* and any shortfall is optimisation). The column that matters is how many
+of the source's 0.6098 bits per bin the code actually delivers, measured as
+h(p) minus the converged cross-entropy:
+
+| variant | bits delivered | Hamming |
+| --- | ---: | ---: |
+| lr 3e-4, 2000 steps (the pilot's setting) | 0.047 | 0.1507 |
+| lr 1e-3, 2000 steps | 0.078 | 0.1486 |
+| **noiseless channel**, lr 1e-3, 2000 steps | 0.091 | 0.1480 |
+| hidden 512, lr 1e-3, 2000 steps | 0.095 | 0.1470 |
+| lr 3e-3, 2000 steps | 0.109 | 0.1464 |
+| lr 3e-3, 8000 steps | 0.177 | 0.1474 |
+| lr 3e-3, hidden 512, 8000 steps | 0.205 | 0.1387 |
+| lr 1e-2, 8000 steps | 0.262 | **0.1247** |
+| lr 3e-2, 8000 steps | 0.291 | 0.1364 |
+| lr 1e-2, 20000 steps | 0.325 | 0.1283 |
+| lr 3e-2, 20000 steps | **0.327** | 0.1334 |
+
+Deleting the channel entirely buys 0.013 bits. Raising the step size from 3e-4 to
+1e-2 buys 0.215. The channel was never the binding constraint and neither was
+the architecture; **at lr 3e-4 the system had barely started training**, and the
+flat curve was measuring the optimiser.
+
+Two things follow for anyone reading a curve out of this folder. Every point on
+it has to be trained to the same budget, or the curve measures the budget
+instead of the rate. And the run at lr 1e-2 was still improving at 8000 steps
+(cross-entropy 0.2384 -> 0.2367 over the last eighth) while the 20000-step runs
+had flattened (0.1988 -> 0.1968), so 8000 steps is short of convergence and
+20000 is near it.
+
+**The last four rows disagree with each other, and the disagreement is the point.**
+Past 8000 steps the cross-entropy keeps falling -- 0.348 bits to 0.283 -- while
+the Hamming distortion gets *worse*, 0.1247 to 0.1334. That is a real limit on
+the argument made in `src/distortions.py`, that cross-entropy is the proper
+surrogate for Hamming. The argument is asymptotic: a *perfect* posterior
+thresholded at 1/2 is the Bayes rule, but between two imperfect models the one
+with the better average log-loss need not have the better error rate, and here
+it does not. Read with the caveat that these are single seeds, so the ordering
+among the last four is within plausible run-to-run spread while the gap to the
+first row is not. Recorded rather than tidied away, because the surrogate
+argument is used to justify the Hamming curve and this is the size of the crack
+in it.
+
+Chosen for the sweep: **lr 1e-2, 8000 steps**, the cheapest setting on the
+plateau and the best of the four on the distortion the Hamming curve actually
+reports. 20000 steps for the primary grid alone is the upgrade to make if there
+is time; it should help the two squared-error distortions, which are trained
+directly on the quantity they are scored on and so have no surrogate gap to
+worry about.
+
 ## Reproducing
 
 ```bash
-python3 scripts/theory.py                          # bounds + self-checks, ~5 min
-python3 scripts/baselines.py                       # reference systems
-python3 scripts/sweep.py --grid primary  --workers 8
-python3 scripts/sweep.py --grid multispike --workers 8
-python3 scripts/sweep.py --grid latent     --workers 8
-python3 scripts/visualize.py --ckpt runs/sweep/primary/hamming/K032-s1/model.pt
+python3 scripts/theory.py                    # bounds + self-checks, ~7 min, once
+python3 scripts/baselines.py                 # reference systems, seconds
+python3 scripts/sweep.py --grid primary    --lr 1e-2 --steps 8000 --workers 8
+python3 scripts/sweep.py --grid multispike --lr 1e-2 --steps 8000 --workers 8 --coarse
+python3 scripts/sweep.py --grid latent     --lr 1e-2 --steps 8000 --workers 8 --coarse
+python3 scripts/report.py    --grid primary          # the tables
+python3 scripts/visualize.py --grid primary \
+        --ckpt runs/sweep/primary/hamming/K064-s1/model.pt
 ```
+
+`scripts/theory.py` caches every capacity it computes in
+`runs/capacity-cache.json`, and the sweep warms that cache serially before
+forking, so the 2^T x 2^T Blahut-Arimoto behind the multi-spike capacity is paid
+once rather than raced for by eight workers. `sweep.py` skips any point whose
+`result.json` already exists, so an interrupted sweep resumes.
+
+The primary grid is 11 rate points x 3 distortions = 33 models; the two control
+grids use the coarse 6-point subset, 18 each. At lr 1e-2 and 8000 steps one
+model is about 9 minutes of one core.
 
 No dataset and no download: the source is a generator, so every batch is fresh,
 the evaluation stream is separately seeded, and overfitting is not a possible
 confound. Runs are single-threaded processes, many at once -- measured at 46
 ms/step on one thread against 60 ms on four, so the parallelism belongs across
-models, not inside them.
+models, not inside them. This machine has 4 performance and 6 efficiency cores,
+so eight workers is roughly six cores' worth of throughput, not eight.
+
+## Numerical checks
+
+`runs/theory.json` carries a `checks` block, and it is the first thing to read
+if a measured point looks impossible. As computed at T = 12, p = 0.15:
+
+| check | expected | got |
+| --- | --- | --- |
+| Blahut-Arimoto Hamming vs closed form `h(p) - h(D)` | 0 | 2.2e-16 |
+| count-MSE R(D) at zero rate vs `Var[Binomial]` | 1.5300 | 1.5304 |
+| count-MSE R(D) as D -> 0 vs `H(count)` | 2.290482 | 2.290482 |
+| van Rossum R(D) as D -> 0 vs `T*h(p)` | 7.318084 | 7.318084 |
+| multi-spike capacity at sigma -> 0 vs `T` bits | 12 | 12.000000 |
+| van Rossum real-reproduction curve no looser than binary | >= 0 | -3.2e-5 |
+
+The last one does not land where it should and the residual is understood rather
+than dismissed. Both van Rossum curves are upper bounds on the same R(D), and
+the real-reproduction run starts from the binary alphabet, so its estimate
+cannot be genuinely looser. The comparison itself is what leaves the residual:
+the two curves are sampled on different Lagrange-multiplier grids, so one is
+linearly interpolated onto the other's rate points, and linear interpolation of
+a convex curve lies *above* it -- biasing this very margin negative. At -3.2e-5
+against a distortion scale of 0.024 it is 0.13% of the axis. To confirm rather
+than infer, recompute both curves on a shared multiplier grid and compare
+pointwise.
+
+An earlier version of this check failed at -6.6e-4, and that one was real: the
+reproduction points were initialised as 512 samples from the source, and 512
+centroids cannot represent 4096 words near D = 0, so the "tighter" curve was
+loose exactly where it mattered. `blahut_arimoto_rd_real` now starts from the
+full alphabet.

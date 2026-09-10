@@ -145,14 +145,20 @@ def capacity_figure(theory, out_dir):
             asym = np.asarray(cap["ttfs_highsnr_asymptote"])
             m = asym > 0
             ax.plot(s[m], asym[m], color=INK, lw=1.5, ls=(0, (4, 3)), zorder=4)
-            ax.annotate("high-resolution\nasymptote", (s[m][0], asym[m][0]),
-                        textcoords="offset points", xytext=(8, -14), color=INK2,
-                        fontsize=9)
+            ax.text(0.03, 0.06, "dashed: high-resolution asymptote,\n"
+                    "$\\log_2(T/\\sigma) - \\frac{1}{2}\\log_2(2\\pi e)$",
+                    transform=ax.transAxes, color=INK2, fontsize=9, va="bottom")
         else:
             ax.axhline(theory["n_bins"], color=INK, lw=1.5, ls=(0, (4, 3)), zorder=4)
-            ax.text(s[-1], theory["n_bins"], " T bits, noiseless ", color=INK2,
-                    fontsize=9, va="bottom", ha="right")
+            ax.set_ylim(top=theory["n_bins"] * 1.14)
+            ax.text(0.03, 0.965, "dashed: T bits, the noiseless ceiling",
+                    transform=ax.transAxes, color=INK2, fontsize=9, va="top")
         ax.set_xscale("log")
+        # label the jitter values actually computed: the default log locator
+        # shows only the single decade tick, which reads as an unlabelled axis
+        ax.set_xticks(list(s))
+        ax.set_xticklabels([f"{v:g}" for v in s], fontsize=9)
+        ax.set_xticks([], minor=True)
         style(ax, "jitter $\\sigma$  (bins)", "capacity  (bits per channel use)", title)
     fig.suptitle("What one channel use is worth", color=INK, fontsize=12, x=0.01,
                  ha="left")

@@ -213,7 +213,7 @@ def psp_trace(words, tau):
     return out
 
 
-def blahut_arimoto_rd_real(px, feats, n_repro=512, s_values=None, n_iter=200,
+def blahut_arimoto_rd_real(px, feats, n_repro=None, s_values=None, n_iter=120,
                            tol=1e-10, device="cpu", dtype=torch.float64,
                            seed=0):
     """R(D) for a squared-error distortion with *real-valued* reproductions.
@@ -241,15 +241,26 @@ def blahut_arimoto_rd_real(px, feats, n_repro=512, s_values=None, n_iter=200,
     f = torch.as_tensor(feats, dtype=dtype, device=device)
     n_x, dim = f.shape
 
-    g = torch.Generator(device="cpu").manual_seed(seed)
-    start = torch.multinomial(px.cpu().clamp_min(1e-300), min(n_repro, n_x),
-                              replacement=False, generator=g)
-    y0 = f[start.to(device)].clone()
+    # Initialise the reproduction points at the source letters themselves --
+    # every one of them, unless `n_repro` asks for a subsample. Two reasons, and
+    # the first is load-bearing. Starting from the full alphabet makes the
+    # fixed-alphabet solution a feasible point of this iteration, so the curve
+    # returned can only be at or below the fixed-alphabet curve; a subsample of
+    # 512 points was tried first and came out *above* the binary-alphabet curve
+    # near D = 0, where no set of 512 centroids can represent 4096 words. Second,
+    # it gives the D -> 0 end the right limit, R -> H(source).
+    if n_repro is None or n_repro >= n_x:
+        y0 = f.clone()
+    else:
+        g = torch.Generator(device="cpu").manual_seed(seed)
+        start = torch.multinomial(px.cpu().clamp_min(1e-300), n_repro,
+                                  replacement=False, generator=g)
+        y0 = f[start.to(device)].clone()
 
     d0 = torch.cdist(f, y0) ** 2 / dim
     d_char = max(float((px @ d0).min()), 1e-12)
     if s_values is None:
-        s_values = -np.concatenate([np.logspace(2.5, -2.0, 40) / d_char, [0.0]])
+        s_values = -np.concatenate([np.logspace(2.5, -2.0, 32) / d_char, [0.0]])
 
     rates, dists = [], []
     for s in s_values:
@@ -283,7 +294,7 @@ def blahut_arimoto_rd_real(px, feats, n_repro=512, s_values=None, n_iter=200,
 
 
 def van_rossum_rd(T, p, tau=3.0, s_values=None, device="cpu",
-                  reproduction="real", n_repro=512):
+                  reproduction="real", n_repro=None):
     """R(D) for the van Rossum distortion, bits per neuron-window.
 
     The distortion is not single-letter -- filtering couples the T bins -- so
