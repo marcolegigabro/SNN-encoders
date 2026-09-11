@@ -56,7 +56,9 @@ def style(ax, xlabel, ylabel, title, subtitle=None):
     ax.tick_params(colors=INK2, labelsize=9, length=3, color=GRID)
     ax.set_xlabel(xlabel, color=INK2, fontsize=10)
     ax.set_ylabel(ylabel, color=INK2, fontsize=10)
-    ax.set_title(title, color=INK, fontsize=12, loc="left", pad=14 if subtitle else 8)
+    # 26 points of pad, not 14: at 14 the title's own box lands on top of the
+    # subtitle drawn at 1.02 and both become unreadable.
+    ax.set_title(title, color=INK, fontsize=12, loc="left", pad=26 if subtitle else 8)
     if subtitle:
         ax.text(0.0, 1.02, subtitle, transform=ax.transAxes, color=MUTED,
                 fontsize=9, va="bottom")
