@@ -1,0 +1,38 @@
+[SNN]    beta1000: rate 39.25  D 0.1502  active 8/8
+[SNN]     beta100: rate 13.21  D 0.2121  active 6/8
+[SNN]     beta200: rate 19.46  D 0.1879  active 7/8
+[SNN]    beta5000: rate 43.52  D 0.1266  active 8/8
+[SNN]      beta50: rate  8.76  D 0.2993  active 4/8
+[SNN]    beta2000: rate 43.27  D 0.1531  active 8/8
+[SNN]   beta10000: rate 43.91  D 0.1248  active 8/8
+[SNN]     beta500: rate 33.20  D 0.1358  active 8/8
+
+[SNN] strongest coordinate per feature (Spearman), by run:
+       beta50 ( 8.76 bits): count: z0 +0.92 | count_first_half: z0 +0.80 | count_second_half: z5 -0.56 | first_time: z7 +0.94 | last_time: z3 -0.36 | mean_time: z7 +0.62 | max_gap: z0 -0.69 | isi_cv: z0 +0.26
+      beta100 (13.21 bits): count: z6 +0.92 | count_first_half: z6 +0.84 | count_second_half: z3 -0.48 | first_time: z2 +0.89 | last_time: z7 -0.50 | mean_time: z2 +0.64 | max_gap: z6 -0.68 | isi_cv: z6 +0.26
+      beta200 (19.46 bits): count: z5 +0.82 | count_first_half: z5 +0.91 | count_second_half: z4 -0.68 | first_time: z5 -0.71 | last_time: z0 +0.37 | mean_time: z4 -0.56 | max_gap: z5 -0.57 | isi_cv: z6 +0.48
+      beta500 (33.20 bits): count: z2 +0.79 | count_first_half: z5 +0.94 | count_second_half: z4 -0.71 | first_time: z3 +0.74 | last_time: z4 -0.44 | mean_time: z4 -0.76 | max_gap: z2 -0.74 | isi_cv: z1 +0.37
+     beta1000 (39.25 bits): count: z1 +0.89 | count_first_half: z5 +0.79 | count_second_half: z1 +0.57 | first_time: z2 +0.82 | last_time: z0 +0.41 | mean_time: z5 -0.71 | max_gap: z1 -0.76 | isi_cv: z7 +0.32
+     beta2000 (43.27 bits): count: z6 +0.84 | count_first_half: z5 +0.90 | count_second_half: z7 -0.57 | first_time: z1 -0.85 | last_time: z0 +0.35 | mean_time: z4 -0.72 | max_gap: z5 -0.67 | isi_cv: z4 +0.30
+     beta5000 (43.52 bits): count: z0 +0.84 | count_first_half: z0 +0.88 | count_second_half: z7 -0.61 | first_time: z2 +0.84 | last_time: z7 -0.35 | mean_time: z4 -0.60 | max_gap: z0 -0.71 | isi_cv: z7 -0.41
+    beta10000 (43.91 bits): count: z0 +0.88 | count_first_half: z0 +0.84 | count_second_half: z7 -0.58 | first_time: z2 +0.83 | last_time: z6 -0.44 | mean_time: z4 -0.64 | max_gap: z0 -0.77 | isi_cv: z7 -0.39
+[GRU]    beta1000: rate 37.70  D 0.0838  active 8/8
+[GRU]     beta100: rate 14.36  D 0.1367  active 6/8
+[GRU]     beta200: rate 18.96  D 0.1093  active 6/8
+[GRU]    beta5000: rate 42.13  D 0.0834  active 8/8
+[GRU]      beta50: rate  8.28  D 0.2381  active 4/8
+[GRU]    beta2000: rate 40.49  D 0.0834  active 8/8
+[GRU]   beta10000: rate 42.30  D 0.0887  active 8/8
+[GRU]     beta500: rate 29.24  D 0.0863  active 7/8
+
+[GRU] strongest coordinate per feature (Spearman), by run:
+       beta50 ( 8.28 bits): count: z6 -0.87 | count_first_half: z6 -0.91 | count_second_half: z3 -0.73 | first_time: z6 +0.57 | last_time: z3 -0.21 | mean_time: z3 -0.59 | max_gap: z6 +0.62 | isi_cv: z6 -0.27
+      beta100 (14.36 bits): count: z6 -0.85 | count_first_half: z6 -0.92 | count_second_half: z3 -0.67 | first_time: z6 +0.61 | last_time: z3 -0.32 | mean_time: z6 +0.47 | max_gap: z6 +0.59 | isi_cv: z6 -0.28
+      beta200 (18.96 bits): count: z6 -0.86 | count_first_half: z6 -0.91 | count_second_half: z4 -0.73 | first_time: z2 -0.92 | last_time: z0 +0.55 | mean_time: z2 -0.58 | max_gap: z6 +0.64 | isi_cv: z6 -0.25
+      beta500 (29.24 bits): count: z4 -0.77 | count_first_half: z2 +0.84 | count_second_half: z4 -0.78 | first_time: z2 -0.76 | last_time: z1 -0.36 | mean_time: z2 -0.57 | max_gap: z5 -0.66 | isi_cv: z2 +0.25
+     beta1000 (37.70 bits): count: z3 -0.81 | count_first_half: z6 -0.88 | count_second_half: z3 -0.69 | first_time: z2 -0.78 | last_time: z3 -0.36 | mean_time: z2 -0.69 | max_gap: z1 -0.68 | isi_cv: z0 +0.32
+     beta2000 (40.49 bits): count: z3 -0.92 | count_first_half: z0 +0.89 | count_second_half: z3 -0.73 | first_time: z2 -0.74 | last_time: z4 -0.36 | mean_time: z2 -0.77 | max_gap: z3 +0.67 | isi_cv: z0 +0.30
+     beta5000 (42.13 bits): count: z0 +0.94 | count_first_half: z2 +0.85 | count_second_half: z0 +0.63 | first_time: z2 -0.69 | last_time: z0 +0.30 | mean_time: z2 -0.69 | max_gap: z6 +0.67 | isi_cv: z0 +0.29
+    beta10000 (42.30 bits): count: z0 +0.90 | count_first_half: z7 -0.90 | count_second_half: z5 +0.62 | first_time: z2 -0.79 | last_time: z3 -0.34 | mean_time: z2 -0.77 | max_gap: z6 +0.72 | isi_cv: z4 -0.31
+
+wrote analysis.json per sweep and figures to figures/l8a64

@@ -1,0 +1,25 @@
+===== ann scalar beta=500 steps=15000 =====
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=500 | latent 8x16 (<= 32 bits)
+step  2500 | w_rate 0.00 | train loss  279.920 | rate ideal 58.74 real 58.70 bits/T | D 1.0380 (soft 1.0648) | active 8/8 | 22s
+step  5000 | w_rate 0.44 | train loss  113.813 | rate ideal 45.48 real 45.42 bits/T | D 1.1192 (soft 1.1119) | active 8/8 | 45s
+step  7500 | w_rate 1.00 | train loss  117.260 | rate ideal 33.23 real 33.23 bits/T | D 1.5155 (soft 1.5478) | active 8/8 | 68s
+step 10000 | w_rate 1.00 | train loss  118.250 | rate ideal 29.55 real 29.55 bits/T | D 0.5086 (soft 0.5175) | active 8/8 | 92s
+step 12500 | w_rate 1.00 | train loss  114.244 | rate ideal 27.66 real 27.66 bits/T | D 0.1009 (soft 0.1763) | active 8/8 | 116s
+step 15000 | w_rate 1.00 | train loss  112.455 | rate ideal 27.53 real 27.54 bits/T | D 0.0923 (soft 0.1642) | active 8/8 | 140s
+===== snn scalar beta=50 steps=6000 (first run recompiles, ~8 min) =====
+encoder=snn (9288 params) | quantizer=scalar | lambda T=5 | beta=50 | latent 8x16 (<= 32 bits)
+step  1000 | w_rate 0.00 | train loss   67.018 | rate ideal 25.84 real 25.84 bits/T | D 1.1966 (soft 1.2215) | active 8/8 | 993 spk/win | 210s
+step  2000 | w_rate 0.44 | train loss   65.009 | rate ideal 25.36 real 25.36 bits/T | D 1.1964 (soft 1.2212) | active 8/8 | 993 spk/win | 237s
+step  3000 | w_rate 1.00 | train loss   78.977 | rate ideal 25.28 real 25.28 bits/T | D 1.1964 (soft 1.2212) | active 8/8 | 993 spk/win | 265s
+step  4000 | w_rate 1.00 | train loss   86.021 | rate ideal 25.32 real 25.33 bits/T | D 1.1964 (soft 1.2213) | active 8/8 | 993 spk/win | 293s
+step  5000 | w_rate 1.00 | train loss   86.141 | rate ideal 25.21 real 25.21 bits/T | D 1.1965 (soft 1.2214) | active 8/8 | 993 spk/win | 322s
+step  6000 | w_rate 1.00 | train loss   86.007 | rate ideal 25.20 real 25.20 bits/T | D 1.1961 (soft 1.2209) | active 8/8 | 993 spk/win | 352s
+===== snn scalar beta=500 steps=6000 =====
+encoder=snn (9288 params) | quantizer=scalar | lambda T=5 | beta=500 | latent 8x16 (<= 32 bits)
+step  1000 | w_rate 0.00 | train loss  595.122 | rate ideal 28.93 real 28.93 bits/T | D 1.3689 (soft 1.3750) | active 8/8 | 1855 spk/win | 63s
+step  2000 | w_rate 0.44 | train loss  694.518 | rate ideal 28.95 real 28.95 bits/T | D 1.3729 (soft 1.3793) | active 8/8 | 1855 spk/win | 92s
+step  3000 | w_rate 1.00 | train loss  710.569 | rate ideal 28.89 real 28.90 bits/T | D 1.3646 (soft 1.3713) | active 8/8 | 1855 spk/win | 118s
+step  4000 | w_rate 1.00 | train loss  717.776 | rate ideal 28.86 real 28.87 bits/T | D 1.3680 (soft 1.3751) | active 8/8 | 1855 spk/win | 147s
+step  5000 | w_rate 1.00 | train loss  717.495 | rate ideal 28.87 real 28.87 bits/T | D 1.3615 (soft 1.3686) | active 8/8 | 1855 spk/win | 174s
+step  6000 | w_rate 1.00 | train loss  718.784 | rate ideal 28.83 real 28.83 bits/T | D 1.3585 (soft 1.3658) | active 8/8 | 1855 spk/win | 204s
+===== done =====

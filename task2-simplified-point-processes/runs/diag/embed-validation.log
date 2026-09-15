@@ -1,0 +1,15 @@
+===== ann 8x64 beta=2000 level_embed_dim=32 dec_hidden=1024 (was D 0.0835 @ 40.5 bits) =====
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=2000 | latent 8x64 (<= 48 bits)
+step  2000 | w_rate 0.00 | train loss 1378.390 | rate ideal 67.56 real 67.55 bits/T | D 1.1464 (soft 1.1640) | active 8/8 | enc |g| 2.9e+03 skipped 0 | 23s
+step  4000 | w_rate 0.67 | train loss  494.230 | rate ideal 61.41 real 61.30 bits/T | D 1.5155 (soft 1.5304) | active 8/8 | enc |g| 2.4e+03 skipped 0 | 47s
+step  6000 | w_rate 1.00 | train loss  409.397 | rate ideal 99.66 real 99.44 bits/T | D 2.9562 (soft 2.9651) | active 8/8 | enc |g| 1.8e+03 skipped 0 | 70s
+step  8000 | w_rate 1.00 | train loss  352.859 | rate ideal 44.66 real 44.62 bits/T | D 1.2931 (soft 1.3073) | active 8/8 | enc |g| 1.5e+03 skipped 0 | 94s
+step 10000 | w_rate 1.00 | train loss  321.002 | rate ideal 29.23 real 29.24 bits/T | D 0.0899 (soft 0.1348) | active 8/8 | enc |g| 1.3e+03 skipped 0 | 118s
+===== snn 8x64 beta=2000 level_embed_dim=32 dec_hidden=1024 (was D 0.1558 @ 43.3 bits) =====
+encoder=snn (9288 params) | quantizer=scalar | lambda T=5 | beta=2000 | latent 8x64 (<= 48 bits)
+step  2000 | w_rate 0.00 | train loss 1104.117 | rate ideal 38.67 real 38.67 bits/T | D 0.2209 (soft 0.2970) | active 8/8 | enc |g| 2.8e+05 skipped 0 | 4228 spk/win | 84s
+step  4000 | w_rate 0.67 | train loss  547.370 | rate ideal 39.51 real 39.51 bits/T | D 0.2399 (soft 0.2930) | active 8/8 | enc |g| 1.7e+03 skipped 0 | 5022 spk/win | 136s
+step  6000 | w_rate 1.00 | train loss  466.570 | rate ideal 38.30 real 38.30 bits/T | D 0.1472 (soft 0.1977) | active 8/8 | enc |g| 1.2e+03 skipped 0 | 5184 spk/win | 188s
+step  8000 | w_rate 1.00 | train loss  425.427 | rate ideal 37.98 real 37.98 bits/T | D 0.1301 (soft 0.1753) | active 8/8 | enc |g| 1.1e+03 skipped 0 | 5184 spk/win | 246s
+step 10000 | w_rate 1.00 | train loss  392.151 | rate ideal 37.82 real 37.82 bits/T | D 0.1265 (soft 0.1662) | active 8/8 | enc |g| 1.0e+03 skipped 0 | 5232 spk/win | 305s
+===== done =====

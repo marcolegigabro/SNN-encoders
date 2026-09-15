@@ -1,0 +1,9 @@
+perfect symbols: D 0.0378
+reference (6000 steps, width 64): ann exact 0.538 D 0.1919 | snn exact 0.366 D 0.2913
+ann width 64   (  9442 params) steps 6000   | final train huber 1.009 | exact 0.538 within+-1 0.838 | D 0.1919 | 0.9 min
+ann width 128  ( 35078 params) steps 6000   | final train huber 0.889 | exact 0.550 within+-1 0.833 | D 0.1635 | 1.8 min
+ann width 256  (135022 params) steps 6000   | final train huber 0.967 | exact 0.715 within+-1 0.974 | D 0.1680 | 3.6 min
+ann width 64   (  9442 params) steps 20000  | final train huber 0.238 | exact 0.781 within+-1 0.990 | D 0.0523 | 2.8 min
+snn width 128  ( 34952 params) steps 6000   | final train huber 2.335 | exact 0.339 within+-1 0.539 | D 0.3470 | 5.2 min
+snn width 256  (135432 params) steps 6000   | final train huber 2.108 | exact 0.367 within+-1 0.587 | D 0.3240 | 9.9 min
+snn width 64   (  9288 params) steps 20000  | final train huber 1.005 | exact 0.491 within+-1 0.774 | D 0.1786 | 9.1 min

@@ -1,0 +1,7 @@
+encoder=ann (17320 params) | lambda T=5 | beta=50 | latent 8x16 (<= 32 bits)
+step  1000 | train loss   64.750 | rate ideal  3.40 real  3.41 bits/T | D 1.1634 (soft 1.1677) | active 8/8 | 18s
+step  2000 | train loss   61.348 | rate ideal  3.40 real  3.41 bits/T | D 1.1634 (soft 1.1663) | active 8/8 | 37s
+step  3000 | train loss   61.255 | rate ideal  2.73 real  2.74 bits/T | D 1.1634 (soft 1.1651) | active 8/8 | 52s
+step  4000 | train loss   60.352 | rate ideal  2.12 real  2.13 bits/T | D 1.1634 (soft 1.1642) | active 8/8 | 72s
+step  5000 | train loss   59.993 | rate ideal  2.12 real  2.13 bits/T | D 1.1634 (soft 1.1640) | active 8/8 | 86s
+step  6000 | train loss   59.827 | rate ideal  2.12 real  2.13 bits/T | D 1.1634 (soft 1.1637) | active 8/8 | 103s

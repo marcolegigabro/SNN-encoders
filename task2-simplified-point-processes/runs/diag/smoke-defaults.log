@@ -1,0 +1,7 @@
+===== snn, new defaults, 40 steps (recompiles once) =====
+encoder=snn (9288 params) | quantizer=scalar | lambda T=5 | beta=50 | latent 8x16 (<= 32 bits)
+step    40 | w_rate 1.00 | train loss   68.927 | rate ideal 26.56 real 26.56 bits/T | D 0.8712 (soft 0.9011) | active 8/8 | enc |g| 3.4e+05 skipped 0 | 632 spk/win | 193s
+===== ann, new defaults, 40 steps =====
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=50 | latent 8x16 (<= 32 bits)
+step    40 | w_rate 1.00 | train loss   73.100 | rate ideal 19.54 real 19.55 bits/T | D 1.1275 (soft 1.1485) | active 6/8 | enc |g| 2.7e+01 skipped 0 | 1s
+===== done =====

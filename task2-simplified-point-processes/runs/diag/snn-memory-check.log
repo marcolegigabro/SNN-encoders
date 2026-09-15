@@ -1,0 +1,21 @@
+references: current SNN (beta 0.9, detached) D 0.1786 | GRU D 0.0523 | perfect 0.0378
+  [beta0.97] step 5000 train huber 1.602 skipped 0 | 2.4 min
+  [beta0.97] step 10000 train huber 1.127 skipped 0 | 4.3 min
+  [beta0.97] step 15000 train huber 0.743 skipped 0 | 6.3 min
+  [beta0.97] step 20000 train huber 0.639 skipped 0 | 8.4 min
+beta0.97           | final huber 0.639 skipped 0 | learned mean beta l1 0.977 l2 0.978 | exact 0.568 within+-1 0.868 | D 0.1194 | 8.4 min
+  [beta0.99] step 5000 train huber 1.217 skipped 0 | 2.1 min
+  [beta0.99] step 10000 train huber 1.009 skipped 0 | 4.2 min
+  [beta0.99] step 15000 train huber 0.762 skipped 0 | 6.3 min
+  [beta0.99] step 20000 train huber 0.649 skipped 0 | 8.4 min
+beta0.99           | final huber 0.649 skipped 0 | learned mean beta l1 0.978 l2 0.989 | exact 0.567 within+-1 0.875 | D 0.1232 | 8.4 min
+  [gamma0.5] step 5000 train huber 1.178 skipped 0 | 5.8 min
+  [gamma0.5] step 10000 train huber 0.917 skipped 0 | 8.1 min
+  [gamma0.5] step 15000 train huber 0.732 skipped 0 | 10.4 min
+  [gamma0.5] step 20000 train huber 0.502 skipped 0 | 12.7 min
+gamma0.5           | final huber 0.502 skipped 0 | learned mean beta l1 0.965 l2 0.939 | exact 0.626 within+-1 0.937 | D 0.0971 | 12.7 min
+  [beta0.97+gamma0.5] step 5000 train huber 0.979 skipped 0 | 11.1 min
+  [beta0.97+gamma0.5] step 10000 train huber 0.843 skipped 0 | 13.2 min
+  [beta0.97+gamma0.5] step 15000 train huber 0.556 skipped 0 | 15.4 min
+  [beta0.97+gamma0.5] step 20000 train huber 0.425 skipped 0 | 17.7 min
+beta0.97+gamma0.5  | final huber 0.425 skipped 0 | learned mean beta l1 0.977 l2 0.968 | exact 0.641 within+-1 0.943 | D 0.0903 | 17.7 min

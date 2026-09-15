@@ -16,6 +16,10 @@ checkpoints/
 *.pt
 *.ckpt
 
+# tool caches (torch.compile kernels, pytest)
+.cache/
+.pytest_cache/
+
 # editors / OS
 .vscode/
 .idea/

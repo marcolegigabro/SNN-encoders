@@ -1,0 +1,41 @@
+[SNN]    beta1000: rate 29.12  D 0.1392  active 8/8
+[SNN]     beta100: rate 11.52  D 0.2191  active 5/8
+[SNN]     beta200: rate 17.42  D 0.1793  active 8/8
+[SNN]      beta50: rate  8.19  D 0.2868  active 4/8
+[SNN]    beta2000: rate 29.46  D 0.1320  active 8/8
+[SNN]      beta20: rate  4.46  D 0.4495  active 2/8
+[SNN]       beta5: rate  0.00  D 1.1824  active 0/8
+[SNN]      beta10: rate  2.13  D 0.5764  active 1/8
+[SNN]     beta500: rate 26.71  D 0.1545  active 8/8
+
+[SNN] strongest coordinate per feature (Spearman), by run:
+       beta10 ( 2.13 bits): count: z4 -0.86 | count_first_half: z4 -0.84 | count_second_half: z4 -0.36 | first_time: z4 +0.54 | last_time: z4 -0.06 | mean_time: z4 +0.37 | max_gap: z4 +0.62 | isi_cv: z4 -0.24
+       beta20 ( 4.46 bits): count: z7 -0.90 | count_first_half: z7 -0.83 | count_second_half: z7 -0.44 | first_time: z0 -0.78 | last_time: z0 -0.19 | mean_time: z0 -0.76 | max_gap: z7 +0.68 | isi_cv: z7 -0.26
+       beta50 ( 8.19 bits): count: z7 -0.92 | count_first_half: z7 -0.80 | count_second_half: z6 -0.58 | first_time: z0 -0.93 | last_time: z6 -0.27 | mean_time: z0 -0.67 | max_gap: z7 +0.70 | isi_cv: z4 +0.30
+      beta100 (11.52 bits): count: z6 +0.83 | count_first_half: z6 +0.89 | count_second_half: z7 -0.86 | first_time: z4 -0.95 | last_time: z7 -0.39 | mean_time: z4 -0.47 | max_gap: z6 -0.63 | isi_cv: z5 +0.38
+      beta200 (17.42 bits): count: z3 +0.87 | count_first_half: z3 +0.83 | count_second_half: z4 -0.88 | first_time: z7 +0.98 | last_time: z4 -0.42 | mean_time: z7 +0.59 | max_gap: z3 -0.67 | isi_cv: z5 +0.41
+      beta500 (26.71 bits): count: z3 +0.86 | count_first_half: z6 +0.85 | count_second_half: z0 +0.66 | first_time: z7 +0.72 | last_time: z7 -0.32 | mean_time: z6 -0.78 | max_gap: z1 -0.74 | isi_cv: z0 +0.43
+     beta1000 (29.12 bits): count: z6 +0.92 | count_first_half: z1 +0.88 | count_second_half: z0 +0.59 | first_time: z5 -0.80 | last_time: z0 +0.42 | mean_time: z3 -0.56 | max_gap: z0 -0.71 | isi_cv: z6 +0.41
+     beta2000 (29.46 bits): count: z0 +0.90 | count_first_half: z0 +0.81 | count_second_half: z3 +0.65 | first_time: z7 +0.98 | last_time: z6 +0.33 | mean_time: z7 +0.58 | max_gap: z6 -0.69 | isi_cv: z3 +0.43
+[GRU]    beta1000: rate 28.63  D 0.0939  active 8/8
+[GRU]     beta100: rate 14.19  D 0.1456  active 6/8
+[GRU]     beta200: rate 17.87  D 0.1207  active 6/8
+[GRU]      beta50: rate  8.64  D 0.2379  active 4/8
+[GRU]    beta2000: rate 29.13  D 0.0919  active 8/8
+[GRU]      beta20: rate  4.18  D 0.4090  active 2/8
+[GRU]       beta5: rate  1.55  D 0.6814  active 1/8
+[GRU]      beta10: rate  2.17  D 0.5620  active 1/8
+[GRU]     beta500: rate 27.16  D 0.0934  active 8/8
+
+[GRU] strongest coordinate per feature (Spearman), by run:
+        beta5 ( 1.55 bits): count: z7 -0.78 | count_first_half: z7 -0.82 | count_second_half: z7 -0.29 | first_time: z7 +0.53 | last_time: z7 -0.06 | mean_time: z7 +0.40 | max_gap: z7 +0.55 | isi_cv: z7 -0.25
+       beta10 ( 2.17 bits): count: z2 +0.83 | count_first_half: z2 +0.89 | count_second_half: z2 +0.28 | first_time: z2 -0.55 | last_time: z2 +0.05 | mean_time: z2 -0.44 | max_gap: z2 -0.58 | isi_cv: z2 +0.26
+       beta20 ( 4.18 bits): count: z6 -0.88 | count_first_half: z6 -0.88 | count_second_half: z5 +0.53 | first_time: z6 +0.54 | last_time: z5 +0.17 | mean_time: z5 +0.61 | max_gap: z6 +0.63 | isi_cv: z6 -0.27
+       beta50 ( 8.64 bits): count: z5 +0.79 | count_first_half: z6 -0.92 | count_second_half: z5 +0.67 | first_time: z6 +0.71 | last_time: z3 -0.35 | mean_time: z6 +0.60 | max_gap: z5 -0.74 | isi_cv: z6 -0.27
+      beta100 (14.19 bits): count: z7 +0.82 | count_first_half: z2 +0.84 | count_second_half: z7 +0.75 | first_time: z2 -0.83 | last_time: z1 -0.49 | mean_time: z2 -0.63 | max_gap: z7 -0.72 | isi_cv: z2 +0.25
+      beta200 (17.87 bits): count: z3 -0.83 | count_first_half: z3 -0.82 | count_second_half: z4 -0.65 | first_time: z6 +0.65 | last_time: z2 -0.24 | mean_time: z2 -0.83 | max_gap: z4 +0.69 | isi_cv: z6 -0.32
+      beta500 (27.16 bits): count: z4 -0.86 | count_first_half: z0 +0.76 | count_second_half: z5 +0.79 | first_time: z7 +0.85 | last_time: z4 -0.41 | mean_time: z7 +0.63 | max_gap: z5 -0.61 | isi_cv: z0 +0.32
+     beta1000 (28.63 bits): count: z5 +0.80 | count_first_half: z6 -0.86 | count_second_half: z5 +0.67 | first_time: z2 -0.78 | last_time: z7 +0.25 | mean_time: z2 -0.75 | max_gap: z5 -0.67 | isi_cv: z0 +0.35
+     beta2000 (29.13 bits): count: z0 +0.89 | count_first_half: z6 -0.85 | count_second_half: z5 +0.78 | first_time: z2 -0.81 | last_time: z0 +0.35 | mean_time: z2 -0.72 | max_gap: z5 -0.63 | isi_cv: z0 +0.31
+
+wrote analysis.json per sweep and figures to /home/mouad/documents/centrale-supelec/year3/filiere-metiers-de-recherche/02-deliverables/snn-encoders/task2-simplified-point-processes/figures

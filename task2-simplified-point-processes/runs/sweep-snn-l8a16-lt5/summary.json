@@ -1,0 +1,191 @@
+[
+  {
+    "beta": 5.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 0.0032,
+    "rate_ideal": 0.00022048453683964908,
+    "rate_symbol_entropy": 0.0,
+    "D": 1.185091257095337,
+    "D_se": 0.008055651560425758,
+    "D_soft": 1.1849908828735352,
+    "count_error": 1.8796000480651855,
+    "active_coords": 0,
+    "spikes_per_window": [
+      243.3949,
+      4847.2573
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 10.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 2.1312,
+    "rate_ideal": 2.128840684890747,
+    "rate_symbol_entropy": 2.1282796579553427,
+    "D": 0.5776793360710144,
+    "D_se": 0.0026838229969143867,
+    "D_soft": 0.5808665752410889,
+    "count_error": 0.8783000111579895,
+    "active_coords": 1,
+    "spikes_per_window": [
+      255.2723,
+      5883.7707
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 20.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 4.4608,
+    "rate_ideal": 4.457834720611572,
+    "rate_symbol_entropy": 4.453371073694704,
+    "D": 0.4516166150569916,
+    "D_se": 0.0021821316331624985,
+    "D_soft": 0.4658006727695465,
+    "count_error": 0.6644999980926514,
+    "active_coords": 2,
+    "spikes_per_window": [
+      294.5613,
+      5432.4457
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 50.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 8.192,
+    "rate_ideal": 8.189926147460938,
+    "rate_symbol_entropy": 8.187171418250053,
+    "D": 0.2892691493034363,
+    "D_se": 0.0017206562915816903,
+    "D_soft": 0.33350858092308044,
+    "count_error": 0.4634000062942505,
+    "active_coords": 4,
+    "spikes_per_window": [
+      251.4837,
+      5713.8186
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 100.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 11.52,
+    "rate_ideal": 11.516525268554688,
+    "rate_symbol_entropy": 11.511892553559132,
+    "D": 0.2209889143705368,
+    "D_se": 0.0014413563767448068,
+    "D_soft": 0.28017592430114746,
+    "count_error": 0.3756999969482422,
+    "active_coords": 5,
+    "spikes_per_window": [
+      267.9711,
+      5237.3646
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 200.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 17.424,
+    "rate_ideal": 17.42253303527832,
+    "rate_symbol_entropy": 17.41546842935489,
+    "D": 0.1808704286813736,
+    "D_se": 0.0013423896161839366,
+    "D_soft": 0.25525328516960144,
+    "count_error": 0.27549999952316284,
+    "active_coords": 8,
+    "spikes_per_window": [
+      278.01,
+      4819.1632
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 500.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 26.7136,
+    "rate_ideal": 26.712406158447266,
+    "rate_symbol_entropy": 26.701232881768888,
+    "D": 0.15753643214702606,
+    "D_se": 0.0014888388104736805,
+    "D_soft": 0.22708247601985931,
+    "count_error": 0.25189998745918274,
+    "active_coords": 8,
+    "spikes_per_window": [
+      419.8295,
+      5856.1163
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 1000.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 29.12,
+    "rate_ideal": 29.11867904663086,
+    "rate_symbol_entropy": 29.103584142555185,
+    "D": 0.14089111983776093,
+    "D_se": 0.0011179826688021421,
+    "D_soft": 0.21187785267829895,
+    "count_error": 0.2558000087738037,
+    "active_coords": 8,
+    "spikes_per_window": [
+      302.2942,
+      5471.4167
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 2000.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 29.4624,
+    "rate_ideal": 29.459821701049805,
+    "rate_symbol_entropy": 29.448711356489248,
+    "D": 0.13366691768169403,
+    "D_se": 0.001023639109916985,
+    "D_soft": 0.20668227970600128,
+    "count_error": 0.22179999947547913,
+    "active_coords": 8,
+    "spikes_per_window": [
+      274.9035,
+      5678.867
+    ],
+    "skipped_encoder_steps": 0
+  }
+]
