@@ -1,0 +1,25 @@
+===== ann beta=5 steps=6000 (rate warm-up 20%->50%) =====
+encoder=ann (17320 params) | lambda T=5 | beta=5 | latent 8x16 (<= 32 bits)
+step  1000 | w_rate 0.00 | train loss    3.139 | rate ideal 21.78 real 21.79 bits/T | D 1.6416 (soft 1.6406) | active 8/8 | 19s
+step  2000 | w_rate 0.44 | train loss    3.479 | rate ideal 33.84 real 33.86 bits/T | D 1.1434 (soft 1.2117) | active 8/8 | 36s
+step  3000 | w_rate 1.00 | train loss    6.730 | rate ideal  1.33 real  1.34 bits/T | D 1.1578 (soft 1.1602) | active 8/8 | 49s
+step  4000 | w_rate 1.00 | train loss    7.090 | rate ideal  1.31 real  1.31 bits/T | D 1.1634 (soft 1.1651) | active 8/8 | 66s
+step  5000 | w_rate 1.00 | train loss    7.114 | rate ideal  1.31 real  1.31 bits/T | D 1.1634 (soft 1.1639) | active 8/8 | 83s
+step  6000 | w_rate 1.00 | train loss    7.092 | rate ideal  1.31 real  1.31 bits/T | D 1.1634 (soft 1.1638) | active 8/8 | 97s
+===== ann beta=50 steps=6000 (rate warm-up 20%->50%) =====
+encoder=ann (17320 params) | lambda T=5 | beta=50 | latent 8x16 (<= 32 bits)
+step  1000 | w_rate 0.00 | train loss   35.958 | rate ideal 21.00 real 21.01 bits/T | D 0.6538 (soft 0.6771) | active 8/8 | 15s
+step  2000 | w_rate 0.44 | train loss   18.741 | rate ideal 15.96 real 15.97 bits/T | D 1.0406 (soft 1.0478) | active 8/8 | 31s
+step  3000 | w_rate 1.00 | train loss   25.559 | rate ideal  8.33 real  8.34 bits/T | D 1.2043 (soft 1.1926) | active 8/8 | 43s
+step  4000 | w_rate 1.00 | train loss   30.257 | rate ideal  5.42 real  5.42 bits/T | D 0.6316 (soft 0.6497) | active 8/8 | 56s
+step  5000 | w_rate 1.00 | train loss   30.854 | rate ideal  5.05 real  5.07 bits/T | D 0.5422 (soft 0.5515) | active 8/8 | 71s
+step  6000 | w_rate 1.00 | train loss   30.715 | rate ideal  4.96 real  4.98 bits/T | D 0.5139 (soft 0.5216) | active 8/8 | 85s
+===== ann beta=500 steps=6000 (rate warm-up 20%->50%) =====
+encoder=ann (17320 params) | lambda T=5 | beta=500 | latent 8x16 (<= 32 bits)
+step  1000 | w_rate 0.00 | train loss  465.242 | rate ideal 19.73 real 19.73 bits/T | D 1.3559 (soft 1.3558) | active 8/8 | 15s
+step  2000 | w_rate 0.44 | train loss  183.909 | rate ideal 25.00 real 25.01 bits/T | D 2.3208 (soft 2.3267) | active 8/8 | 32s
+step  3000 | w_rate 1.00 | train loss  168.190 | rate ideal 17.80 real 17.81 bits/T | D 0.5823 (soft 0.5994) | active 8/8 | 46s
+step  4000 | w_rate 1.00 | train loss  164.779 | rate ideal 19.70 real 19.71 bits/T | D 1.2582 (soft 1.2656) | active 8/8 | 60s
+step  5000 | w_rate 1.00 | train loss  161.303 | rate ideal 15.77 real 15.78 bits/T | D 0.3785 (soft 0.3975) | active 8/8 | 76s
+step  6000 | w_rate 1.00 | train loss  158.629 | rate ideal 16.00 real 16.02 bits/T | D 0.2507 (soft 0.2779) | active 8/8 | 91s
+===== done =====

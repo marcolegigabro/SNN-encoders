@@ -1,0 +1,98 @@
+
+==============================================================================
+== beta = 50
+==============================================================================
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=50 | latent 8x64 (<= 48 bits)
+step  4000 | w_rate 0.00 | train loss   24.304 | rate ideal 89.37 real 89.19 bits/T | D 2.0930 (soft 2.0983) | active 8/8 | enc |g| 8.6e+01 skipped 0 | 49s
+step  8000 | w_rate 0.67 | train loss   17.723 | rate ideal 96.98 real 96.76 bits/T | D 2.4394 (soft 2.4464) | active 8/8 | enc |g| 7.8e+01 skipped 0 | 97s
+step 12000 | w_rate 1.00 | train loss   28.903 | rate ideal 51.45 real 51.35 bits/T | D 0.7925 (soft 0.7773) | active 6/8 | enc |g| 4.1e+02 skipped 0 | 146s
+step 16000 | w_rate 1.00 | train loss   31.894 | rate ideal 24.58 real 24.49 bits/T | D 0.6073 (soft 0.6250) | active 4/8 | enc |g| 5.7e+02 skipped 0 | 195s
+step 20000 | w_rate 1.00 | train loss   30.932 | rate ideal  4.92 real  4.92 bits/T | D 0.5153 (soft 0.5233) | active 4/8 | enc |g| 5.1e+02 skipped 0 | 244s
+== beta=50 done in 4.1 min
+
+==============================================================================
+== beta = 100
+==============================================================================
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=100 | latent 8x64 (<= 48 bits)
+step  4000 | w_rate 0.00 | train loss   48.237 | rate ideal 60.52 real 60.52 bits/T | D 4.4931 (soft 4.5069) | active 8/8 | enc |g| 2.1e+02 skipped 0 | 50s
+step  8000 | w_rate 0.67 | train loss   25.163 | rate ideal 97.13 real 96.80 bits/T | D 1.4610 (soft 1.4586) | active 8/8 | enc |g| 8.4e+01 skipped 0 | 99s
+step 12000 | w_rate 1.00 | train loss   37.368 | rate ideal 76.31 real 76.14 bits/T | D 1.7960 (soft 1.7826) | active 8/8 | enc |g| 2.4e+02 skipped 0 | 150s
+step 16000 | w_rate 1.00 | train loss   37.465 | rate ideal 20.63 real 20.60 bits/T | D 0.7057 (soft 0.7094) | active 8/8 | enc |g| 3.9e+02 skipped 0 | 199s
+step 20000 | w_rate 1.00 | train loss   35.119 | rate ideal 12.51 real 12.51 bits/T | D 0.1873 (soft 0.2047) | active 6/8 | enc |g| 3.7e+02 skipped 0 | 249s
+== beta=100 done in 4.2 min
+
+==============================================================================
+== beta = 200
+==============================================================================
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=200 | latent 8x64 (<= 48 bits)
+step  4000 | w_rate 0.00 | train loss   94.221 | rate ideal 95.61 real 95.35 bits/T | D 2.1793 (soft 2.1705) | active 8/8 | enc |g| 4.9e+02 skipped 0 | 48s
+step  8000 | w_rate 0.67 | train loss   41.992 | rate ideal 63.31 real 63.24 bits/T | D 2.6028 (soft 2.6004) | active 8/8 | enc |g| 1.6e+02 skipped 0 | 97s
+step 12000 | w_rate 1.00 | train loss   53.449 | rate ideal 62.37 real 62.30 bits/T | D 1.3379 (soft 1.3211) | active 8/8 | enc |g| 1.5e+02 skipped 0 | 145s
+step 16000 | w_rate 1.00 | train loss   53.791 | rate ideal 72.58 real 72.42 bits/T | D 0.7694 (soft 0.7912) | active 8/8 | enc |g| 1.9e+02 skipped 0 | 194s
+step 20000 | w_rate 1.00 | train loss   51.342 | rate ideal 18.27 real 18.28 bits/T | D 0.1292 (soft 0.1469) | active 8/8 | enc |g| 2.6e+02 skipped 0 | 244s
+== beta=200 done in 4.1 min
+
+==============================================================================
+== beta = 500
+==============================================================================
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=500 | latent 8x64 (<= 48 bits)
+step  4000 | w_rate 0.00 | train loss  229.397 | rate ideal 103.44 real 103.10 bits/T | D 1.8623 (soft 1.8509) | active 8/8 | enc |g| 9.5e+02 skipped 0 | 50s
+step  8000 | w_rate 0.67 | train loss   87.599 | rate ideal 66.94 real 66.85 bits/T | D 1.2722 (soft 1.2738) | active 8/8 | enc |g| 3.0e+02 skipped 0 | 101s
+step 12000 | w_rate 1.00 | train loss   94.624 | rate ideal 92.93 real 92.63 bits/T | D 2.1531 (soft 2.1433) | active 8/8 | enc |g| 2.3e+02 skipped 0 | 150s
+step 16000 | w_rate 1.00 | train loss   86.793 | rate ideal 66.08 real 65.95 bits/T | D 1.3065 (soft 1.2950) | active 8/8 | enc |g| 2.1e+02 skipped 0 | 200s
+step 20000 | w_rate 1.00 | train loss   81.046 | rate ideal 31.35 real 31.35 bits/T | D 0.0669 (soft 0.0884) | active 8/8 | enc |g| 1.9e+02 skipped 0 | 248s
+== beta=500 done in 4.1 min
+
+==============================================================================
+== beta = 1000
+==============================================================================
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=1000 | latent 8x64 (<= 48 bits)
+step  4000 | w_rate 0.00 | train loss  509.818 | rate ideal 83.21 real 83.13 bits/T | D 2.0876 (soft 2.0950) | active 8/8 | enc |g| 1.7e+03 skipped 0 | 48s
+step  8000 | w_rate 0.67 | train loss  177.975 | rate ideal 82.89 real 82.70 bits/T | D 4.2211 (soft 4.2223) | active 8/8 | enc |g| 8.2e+02 skipped 0 | 98s
+step 12000 | w_rate 1.00 | train loss  162.898 | rate ideal 62.51 real 62.51 bits/T | D 1.3452 (soft 1.3466) | active 8/8 | enc |g| 6.0e+02 skipped 0 | 148s
+step 16000 | w_rate 1.00 | train loss  146.029 | rate ideal 42.79 real 42.79 bits/T | D 1.3135 (soft 1.3341) | active 8/8 | enc |g| 5.4e+02 skipped 0 | 199s
+step 20000 | w_rate 1.00 | train loss  135.335 | rate ideal 29.66 real 29.66 bits/T | D 0.0706 (soft 0.0961) | active 8/8 | enc |g| 4.7e+02 skipped 0 | 250s
+== beta=1000 done in 4.2 min
+
+==============================================================================
+== beta = 2000
+==============================================================================
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=2000 | latent 8x64 (<= 48 bits)
+step  4000 | w_rate 0.00 | train loss 1055.891 | rate ideal 103.41 real 103.13 bits/T | D 2.4679 (soft 2.4690) | active 8/8 | enc |g| 3.4e+03 skipped 0 | 52s
+step  8000 | w_rate 0.67 | train loss  348.424 | rate ideal 71.65 real 71.49 bits/T | D 1.0981 (soft 1.1147) | active 8/8 | enc |g| 1.6e+03 skipped 0 | 103s
+step 12000 | w_rate 1.00 | train loss  298.732 | rate ideal 51.85 real 51.80 bits/T | D 1.7581 (soft 1.7713) | active 8/8 | enc |g| 1.2e+03 skipped 0 | 155s
+step 16000 | w_rate 1.00 | train loss  265.471 | rate ideal 39.99 real 39.99 bits/T | D 1.0658 (soft 1.0839) | active 8/8 | enc |g| 1.0e+03 skipped 0 | 207s
+step 20000 | w_rate 1.00 | train loss  245.234 | rate ideal 29.89 real 29.89 bits/T | D 0.0713 (soft 0.0997) | active 8/8 | enc |g| 9.1e+02 skipped 0 | 259s
+== beta=2000 done in 4.3 min
+
+==============================================================================
+== beta = 5000
+==============================================================================
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=5000 | latent 8x64 (<= 48 bits)
+step  4000 | w_rate 0.00 | train loss 2323.240 | rate ideal 54.20 real 54.18 bits/T | D 1.2005 (soft 1.2163) | active 8/8 | enc |g| 9.8e+03 skipped 0 | 52s
+step  8000 | w_rate 0.67 | train loss  762.858 | rate ideal 68.87 real 68.86 bits/T | D 1.9392 (soft 1.9525) | active 8/8 | enc |g| 3.2e+03 skipped 0 | 104s
+step 12000 | w_rate 1.00 | train loss  635.504 | rate ideal 58.19 real 58.15 bits/T | D 1.1385 (soft 1.1485) | active 8/8 | enc |g| 2.4e+03 skipped 0 | 157s
+step 16000 | w_rate 1.00 | train loss  545.156 | rate ideal 62.83 real 62.80 bits/T | D 1.2525 (soft 1.2489) | active 8/8 | enc |g| 2.1e+03 skipped 0 | 209s
+step 20000 | w_rate 1.00 | train loss  489.642 | rate ideal 32.49 real 32.49 bits/T | D 0.0588 (soft 0.0826) | active 8/8 | enc |g| 1.9e+03 skipped 0 | 262s
+== beta=5000 done in 4.4 min
+
+==============================================================================
+== beta = 10000
+==============================================================================
+encoder=ann (9442 params) | quantizer=scalar | lambda T=5 | beta=10000 | latent 8x64 (<= 48 bits)
+step  4000 | w_rate 0.00 | train loss 4646.479 | rate ideal 54.20 real 54.18 bits/T | D 1.2005 (soft 1.2163) | active 8/8 | enc |g| 2.0e+04 skipped 0 | 52s
+step  8000 | w_rate 0.67 | train loss 1524.365 | rate ideal 88.52 real 88.32 bits/T | D 1.2417 (soft 1.2498) | active 8/8 | enc |g| 6.4e+03 skipped 0 | 105s
+step 12000 | w_rate 1.00 | train loss 1238.311 | rate ideal 76.84 real 76.74 bits/T | D 2.0173 (soft 2.0123) | active 8/8 | enc |g| 4.7e+03 skipped 0 | 158s
+step 16000 | w_rate 1.00 | train loss 1056.153 | rate ideal 50.48 real 50.46 bits/T | D 1.1268 (soft 1.1217) | active 8/8 | enc |g| 4.2e+03 skipped 0 | 211s
+step 20000 | w_rate 1.00 | train loss  947.463 | rate ideal 32.83 real 32.83 bits/T | D 0.0583 (soft 0.0827) | active 8/8 | enc |g| 3.9e+03 skipped 0 | 265s
+== beta=10000 done in 4.4 min
+
+   beta  rate real        D    +-se   D soft  active
+     50       4.92   0.5153  0.0026   0.5233     4/8
+    100      12.51   0.1873  0.0010   0.2047     6/8
+    200      18.28   0.1292  0.0007   0.1469     8/8
+    500      31.35   0.0669  0.0005   0.0884     8/8
+   1000      29.66   0.0706  0.0005   0.0961     8/8
+   2000      29.89   0.0713  0.0005   0.0997     8/8
+   5000      32.49   0.0588  0.0005   0.0826     8/8
+  10000      32.83   0.0583  0.0005   0.0827     8/8

@@ -1,0 +1,9 @@
+perfect symbols: D 0.0378
+  [ann] step 2000 train huber 3.658 | 16s
+  [ann] step 4000 train huber 1.740 | 33s
+  [ann] step 6000 train huber 1.009 | 50s
+ann: symbol exact 0.538, within +-1 level 0.838, MAE 1.45 levels | hand-built decode of predicted symbols D 0.1919 (perfect 0.0378)
+  [snn] step 2000 train huber 2.344 | 82s
+  [snn] step 4000 train huber 1.930 | 128s
+  [snn] step 6000 train huber 1.879 | 173s
+snn: symbol exact 0.366, within +-1 level 0.588, MAE 2.24 levels | hand-built decode of predicted symbols D 0.2913 (perfect 0.0378)

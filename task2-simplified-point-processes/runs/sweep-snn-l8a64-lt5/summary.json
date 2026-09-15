@@ -1,0 +1,170 @@
+[
+  {
+    "beta": 50.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 8.7552,
+    "rate_ideal": 8.750670433044434,
+    "rate_symbol_entropy": 8.742823797904272,
+    "D": 0.3012193441390991,
+    "D_se": 0.0016811834648251534,
+    "D_soft": 0.3661935031414032,
+    "count_error": 0.4521999955177307,
+    "active_coords": 4,
+    "spikes_per_window": [
+      228.9983,
+      5131.9396
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 100.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 13.2064,
+    "rate_ideal": 13.204902648925781,
+    "rate_symbol_entropy": 13.190705832207808,
+    "D": 0.21419277787208557,
+    "D_se": 0.001383087132126093,
+    "D_soft": 0.288149356842041,
+    "count_error": 0.30820000171661377,
+    "active_coords": 6,
+    "spikes_per_window": [
+      267.1968,
+      5286.844
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 200.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 19.4592,
+    "rate_ideal": 19.455856323242188,
+    "rate_symbol_entropy": 19.43693338207277,
+    "D": 0.19048576056957245,
+    "D_se": 0.0015072838868945837,
+    "D_soft": 0.2639944553375244,
+    "count_error": 0.24210000038146973,
+    "active_coords": 7,
+    "spikes_per_window": [
+      270.8786,
+      5041.6752
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 500.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 33.2032,
+    "rate_ideal": 33.20135498046875,
+    "rate_symbol_entropy": 33.16744356280978,
+    "D": 0.13779382407665253,
+    "D_se": 0.0010148893343284726,
+    "D_soft": 0.21371042728424072,
+    "count_error": 0.210999995470047,
+    "active_coords": 8,
+    "spikes_per_window": [
+      280.9371,
+      5646.0152
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 1000.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 39.248,
+    "rate_ideal": 39.24401092529297,
+    "rate_symbol_entropy": 39.19689904350049,
+    "D": 0.153638556599617,
+    "D_se": 0.0015420967247337103,
+    "D_soft": 0.222824364900589,
+    "count_error": 0.21709999442100525,
+    "active_coords": 8,
+    "spikes_per_window": [
+      288.4767,
+      4973.5009
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 2000.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 43.2736,
+    "rate_ideal": 43.27146530151367,
+    "rate_symbol_entropy": 43.22292830959908,
+    "D": 0.15579430758953094,
+    "D_se": 0.001478605903685093,
+    "D_soft": 0.2234814167022705,
+    "count_error": 0.23919999599456787,
+    "active_coords": 8,
+    "spikes_per_window": [
+      292.1651,
+      5110.383
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 5000.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 43.5232,
+    "rate_ideal": 43.520992279052734,
+    "rate_symbol_entropy": 43.46708906124202,
+    "D": 0.1280720829963684,
+    "D_se": 0.0009664850658737123,
+    "D_soft": 0.20069529116153717,
+    "count_error": 0.2151000052690506,
+    "active_coords": 8,
+    "spikes_per_window": [
+      274.3017,
+      5538.0768
+    ],
+    "skipped_encoder_steps": 0
+  },
+  {
+    "beta": 10000.0,
+    "encoder": "snn",
+    "quantizer": "scalar",
+    "rate_lambda": 5.0,
+    "T": 1.0,
+    "steps": 10000,
+    "rate_real": 43.9136,
+    "rate_ideal": 43.91220474243164,
+    "rate_symbol_entropy": 43.86099445329633,
+    "D": 0.1259552240371704,
+    "D_se": 0.000984800048172474,
+    "D_soft": 0.19834107160568237,
+    "count_error": 0.20090000331401825,
+    "active_coords": 8,
+    "spikes_per_window": [
+      301.7189,
+      5436.6429
+    ],
+    "skipped_encoder_steps": 0
+  }
+]

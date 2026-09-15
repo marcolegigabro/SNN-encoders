@@ -1,0 +1,17 @@
+===== snn scalar beta=50 steps=6000 | detached recurrence + split clipping (first run recompiles, ~8 min) =====
+encoder=snn (9288 params) | quantizer=scalar | lambda T=5 | beta=50 | latent 8x16 (<= 32 bits)
+step  1000 | w_rate 0.00 | train loss   31.211 | rate ideal 29.10 real 29.11 bits/T | D 0.3763 (soft 0.4336) | active 8/8 | enc |g| 1.4e+03 skipped 0 | 4115 spk/win | 280s
+step  2000 | w_rate 0.44 | train loss   20.774 | rate ideal 22.08 real 22.08 bits/T | D 0.2376 (soft 0.3170) | active 8/8 | enc |g| 3.8e+01 skipped 0 | 4760 spk/win | 308s
+step  3000 | w_rate 1.00 | train loss   28.436 | rate ideal 10.18 real 10.19 bits/T | D 0.2978 (soft 0.3622) | active 6/8 | enc |g| 9.6e+01 skipped 0 | 5392 spk/win | 334s
+step  4000 | w_rate 1.00 | train loss   30.418 | rate ideal  8.89 real  8.90 bits/T | D 0.3242 (soft 0.3745) | active 5/8 | enc |g| 2.3e+02 skipped 0 | 5439 spk/win | 362s
+step  5000 | w_rate 1.00 | train loss   29.335 | rate ideal  7.82 real  7.82 bits/T | D 0.3421 (soft 0.3843) | active 5/8 | enc |g| 2.0e+02 skipped 0 | 5176 spk/win | 391s
+step  6000 | w_rate 1.00 | train loss   28.923 | rate ideal  7.75 real  7.75 bits/T | D 0.3189 (soft 0.3631) | active 5/8 | enc |g| 1.3e+02 skipped 0 | 5201 spk/win | 418s
+===== snn scalar beta=500 steps=6000 =====
+encoder=snn (9288 params) | quantizer=scalar | lambda T=5 | beta=500 | latent 8x16 (<= 32 bits)
+step  1000 | w_rate 0.00 | train loss  310.384 | rate ideal 28.73 real 28.73 bits/T | D 0.3214 (soft 0.3867) | active 8/8 | enc |g| 1.3e+04 skipped 0 | 4376 spk/win | 62s
+step  2000 | w_rate 0.44 | train loss  170.237 | rate ideal 29.02 real 29.03 bits/T | D 0.2324 (soft 0.3116) | active 8/8 | enc |g| 3.4e+02 skipped 0 | 5554 spk/win | 89s
+step  3000 | w_rate 1.00 | train loss  169.437 | rate ideal 27.90 real 27.90 bits/T | D 0.2080 (soft 0.2811) | active 8/8 | enc |g| 3.0e+02 skipped 0 | 6045 spk/win | 116s
+step  4000 | w_rate 1.00 | train loss  164.509 | rate ideal 26.99 real 26.99 bits/T | D 0.2235 (soft 0.2969) | active 8/8 | enc |g| 3.0e+02 skipped 0 | 6014 spk/win | 144s
+step  5000 | w_rate 1.00 | train loss  156.696 | rate ideal 26.99 real 26.99 bits/T | D 0.1903 (soft 0.2700) | active 8/8 | enc |g| 2.7e+02 skipped 0 | 6036 spk/win | 172s
+step  6000 | w_rate 1.00 | train loss  153.410 | rate ideal 26.72 real 26.72 bits/T | D 0.1701 (soft 0.2462) | active 8/8 | enc |g| 2.3e+02 skipped 0 | 6048 spk/win | 201s
+===== done =====
