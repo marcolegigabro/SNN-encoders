@@ -53,13 +53,13 @@ from snntorch import surrogate
 
 
 # ---------------------------------------------------------------------------
-# Encodage / decodage par taux (rate coding)
+# Rate encoding / decoding
 # ---------------------------------------------------------------------------
 
 def rate_encode(pixels, T, p_max=0.8):
     """
-    pixels: (batch, D) in [0, 16] -> spike train (batch, T, D), Bernoulli a
-    chaque pas de temps avec un taux proportionnel a l'intensite du pixel.
+    pixels: (batch, D) in [0, 16] -> spike train (batch, T, D), Bernoulli at
+    each time step with a rate proportional to the pixel's intensity.
     """
     rate = (pixels / 16.0).clamp(0, 1) * p_max  # (batch, D)
     batch, D = pixels.shape
@@ -68,14 +68,14 @@ def rate_encode(pixels, T, p_max=0.8):
 
 
 def decode_rate(spikes, p_max=0.8):
-    """spikes: (batch, T, D) -> intensite reconstruite (batch, D) dans [0,16]."""
+    """spikes: (batch, T, D) -> reconstructed intensity (batch, D) in [0,16]."""
     rate_hat = spikes.mean(dim=1) / p_max
     return (rate_hat * 16.0).clamp(0, 16)
 
 
 # ---------------------------------------------------------------------------
-# Distorsion : van Rossum (reprise de utils.py, incluse ici pour l'autonomie
-# du fichier)
+# Distortion: van Rossum (taken from utils.py, included here so the file
+# is self-contained)
 # ---------------------------------------------------------------------------
 
 def exponential_filter(spikes, tau):
@@ -96,8 +96,8 @@ def van_rossum_distance(x, x_hat, tau=5.0):
 
 
 # ---------------------------------------------------------------------------
-# Une seule couche SNN (pas de hidden layer -- meme convention que
-# AlphaTTFSLayer : compresseur et decompresseur sont chacun UNE couche)
+# A single SNN layer (no hidden layer -- same convention as
+# AlphaTTFSLayer: the compressor and decompressor are each ONE layer)
 # ---------------------------------------------------------------------------
 
 class SNNLayer(nn.Module):
@@ -110,9 +110,9 @@ class SNNLayer(nn.Module):
         self.d_out = d_out
 
     def forward(self, x):
-        """x: (batch, T, d_in) -> spk: (batch, T, d_out). Un neurone peut
-        spiker plusieurs fois sur les T pas -- c'est la difference cle avec
-        AlphaTTFSLayer (un seul spike, au plus, par neurone)."""
+        """x: (batch, T, d_in) -> spk: (batch, T, d_out). A neuron can
+        spike multiple times over the T steps -- this is the key difference from
+        AlphaTTFSLayer (at most one spike per neuron)."""
         batch, T, _ = x.shape
         mem = torch.zeros(batch, self.d_out, device=x.device)
         outs = []
@@ -124,9 +124,9 @@ class SNNLayer(nn.Module):
 
 class SNNStack(nn.Module):
     """
-    Empilement de plusieurs SNNLayer -- contrairement au cas TTFS, pas
-    besoin de rien de special : chaque SNNLayer consomme et produit un
-    train de spikes complet (batch, T, d), donc on chaine simplement.
+    Stacking several SNNLayer -- unlike the TTFS case, nothing
+    special is needed: each SNNLayer consumes and produces a
+    full spike train (batch, T, d), so we just chain them.
     """
     def __init__(self, layer_sizes, beta=0.9, threshold=1.0, spike_grad=None):
         super().__init__()
@@ -142,13 +142,13 @@ class SNNStack(nn.Module):
             x = layer(x)
         return x
 # ---------------------------------------------------------------------------
-# Canal a delai : file d'attente discrete a arrivees groupees (bulk),
-# partagee par les N neurones du goulot -- generalisation discrete de
+# Delay channel: discrete bulk-arrival queue,
+# shared by the N bottleneck neurons -- a discrete generalization of
 # Bedekar-Azizoglu / Anantharam-Verdu.
 # ---------------------------------------------------------------------------
 
 def _bulk_queue_delay_numpy(spikes_np, capacity):
-    """spikes_np: (batch, T, N) 0/1 -> meme forme, spikes retardes/perdus."""
+    """spikes_np: (batch, T, N) 0/1 -> same shape, delayed/dropped spikes."""
     batch, T, N = spikes_np.shape
     out = np.zeros_like(spikes_np)
     for b in range(batch):
@@ -164,17 +164,17 @@ def _bulk_queue_delay_numpy(spikes_np, capacity):
             for _ in range(n_depart):
                 n = queue.pop(0)
                 out[b, t, n] = 1.0
-        # ce qui reste dans `queue` a la fin de la fenetre T est perdu
-        # (canal a capacite finie : un vrai canal avec pertes)
+        # whatever remains in `queue` at the end of the T window is lost
+        # (finite-capacity channel: a genuinely lossy channel)
     return out
 
 
 def bulk_queue_delay_channel(spikes, capacity=1):
     """
-    Canal a delai (file d'attente partagee, capacite fixe `capacity`
-    spikes/pas de temps). NON differentiable (reaffectation discrete des
-    spikes a de nouveaux indices temporels) -- a utiliser via `delay_channel`
-    ci-dessous, qui ajoute l'estimateur straight-through.
+    Delay channel (shared queue, fixed capacity `capacity`
+    spikes/time step). NOT differentiable (discrete reassignment of
+    spikes to new time indices) -- use via `delay_channel`
+    below, which adds the straight-through estimator.
     """
     spikes_np = spikes.detach().cpu().numpy()
     out_np = _bulk_queue_delay_numpy(spikes_np, capacity)
@@ -183,11 +183,11 @@ def bulk_queue_delay_channel(spikes, capacity=1):
 
 def delay_channel(spikes, capacity=1):
     """
-    Version entrainable (straight-through) du canal a delai : la passe avant
-    utilise le vrai train de spikes retarde/tronque, la passe arriere laisse
-    passer le gradient de la loss comme si le canal etait transparent --
-    exactement le meme principe que le straight-through estimator deja
-    utilise pour la fonction de spike des neurones eux-memes.
+    Trainable (straight-through) version of the delay channel: the forward pass
+    uses the true, delayed/truncated spike train, the backward pass lets
+    the loss gradient pass through as if the channel were transparent --
+    exactly the same principle as the straight-through estimator already
+    used for the neurons' own spike function.
     """
     delayed = bulk_queue_delay_channel(spikes, capacity=capacity)
     return spikes + (delayed - spikes).detach()
