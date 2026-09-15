@@ -9,6 +9,17 @@ Implements exactly the pipeline from the project description:
     Z in {0,...,15}^8          (8 discrete symbols, alphabet size 16)
     L = R(Z) + beta * D(X, X_hat)
 
+    Z is produced by one of three interchangeable quantizer_type options
+    (see quantizers.py and RDPipeline):
+      - "gumbel": learned categorical logits + Gumbel-softmax (default,
+                  original behavior).
+      - "grid":   GridQuantizer, an independent per-coordinate uniform
+                  scalar quantizer -- the literal {0,...,15}^8 grid.
+      - "e8":     E8LatticeQuantizer, a vector quantizer onto the E8
+                  lattice (densest known packing in 8 dimensions), which
+                  can trade rate for distortion better than "grid" by
+                  exploiting correlations across the 8 coordinates.
+
 Sweeping beta traces the learned (R, D) operating points, which we then
 compare against the theoretical rate-distortion function of a Bernoulli(p)
 source under Hamming distortion:
@@ -28,6 +39,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ltc_autoencoder import LIFCell, RealSource
+from quantizers import GridQuantizer, E8LatticeQuantizer
 
 
 # ----------------------------------------------------------------------
@@ -68,6 +80,41 @@ class SNNEncoderCategorical(nn.Module):
 
         logits = u_out.view(B, self.n_symbols, self.alphabet_size)
         return logits
+
+
+class SNNEncoderContinuous(nn.Module):
+    """
+    x_{1:T} (T, B, C_in) -> continuous z (B, n_dims) in (-1, 1)^n_dims.
+
+    Same LIF accumulation trick as SNNEncoderCategorical, but the readout
+    is squashed with tanh instead of reshaped into per-symbol categorical
+    logits -- the natural encoder output for a quantizer (GridQuantizer or
+    E8LatticeQuantizer, see quantizers.py) that expects a continuous
+    vector to snap onto a fixed codebook.
+    """
+
+    def __init__(self, c_in, hidden, n_dims, tau_decay=0.5, v_th=1.0):
+        super().__init__()
+        self.fc1 = nn.Linear(c_in, hidden)
+        self.fc_out = nn.Linear(hidden, n_dims)
+        self.lif1 = LIFCell(tau_decay, v_th)
+        self.lif_out_tau = tau_decay
+        self.n_dims = n_dims
+
+    def forward(self, x):
+        T, B, _ = x.shape
+        device = x.device
+
+        u1, o1 = LIFCell.init_state((B, self.fc1.out_features), device)
+        u_out = torch.zeros(B, self.n_dims, device=device)
+
+        for t in range(T):
+            cur1 = self.fc1(x[t])
+            u1, o1 = self.lif1(cur1, u1, o1)
+            cur2 = self.fc_out(o1)
+            u_out = self.lif_out_tau * u_out + cur2
+
+        return torch.tanh(u_out)
 
 
 # ----------------------------------------------------------------------
@@ -180,28 +227,113 @@ class CategoricalSNNDecoderProb(nn.Module):
         return torch.stack(probs, dim=0)  # (T, B, c_out)
 
 
+class ContinuousSNNDecoderProb(nn.Module):
+    """
+    Same role as CategoricalSNNDecoderProb, but the context comes from a
+    continuous quantized vector z_q (B, n_dims) -- the output of
+    GridQuantizer or E8LatticeQuantizer -- via a linear projection instead
+    of an embedding-table lookup on a one-hot code.
+    """
+
+    def __init__(self, n_dims, hidden, c_out, T, tau_decay=0.5, v_th=1.0):
+        super().__init__()
+        self.T = T
+        self.c_out = c_out
+        self.fc_context = nn.Linear(n_dims, hidden)
+        self.fc_in = nn.Linear(hidden + c_out, hidden)
+        self.fc_out = nn.Linear(hidden, c_out)
+        self.lif1 = LIFCell(tau_decay, v_th)
+        self.lif_out_tau = tau_decay
+
+    def forward(self, z_q):
+        """z_q: (B, n_dims) -- dequantized continuous code."""
+        B = z_q.shape[0]
+        device = z_q.device
+        context = self.fc_context(z_q)
+
+        u1, o1 = LIFCell.init_state((B, self.fc_in.out_features), device)
+        u_out = torch.zeros(B, self.c_out, device=device)
+        x_prev = torch.zeros(B, self.c_out, device=device)
+
+        probs = []
+        for t in range(self.T):
+            inp = torch.cat([context, x_prev], dim=-1)
+            cur1 = self.fc_in(inp)
+            u1, o1 = self.lif1(cur1, u1, o1)
+            cur2 = self.fc_out(o1)
+            u_out = self.lif_out_tau * u_out + cur2
+            p_t = torch.sigmoid(cur2)
+            probs.append(p_t)
+            x_prev = (p_t >= 0.5).float()
+
+        return torch.stack(probs, dim=0)  # (T, B, c_out)
+
+
 # ----------------------------------------------------------------------
 # 5. Full model + Hamming distortion surrogate
 # ----------------------------------------------------------------------
 
 class RDPipeline(nn.Module):
+    """
+    quantizer_type selects how the continuous encoder state becomes the
+    discrete code Z:
+      - "gumbel": learned categorical logits + Gumbel-softmax straight-
+                  through (original behavior).
+      - "grid":   continuous encoder output + GridQuantizer, an
+                  independent per-coordinate uniform scalar quantizer,
+                  Z in {0,...,alphabet_size-1}^n_symbols.
+      - "e8":     continuous encoder output + E8LatticeQuantizer, a vector
+                  quantizer onto the E8 lattice that exploits correlations
+                  across the n_symbols coordinates a grid quantizer ignores.
+    All three still produce a rate estimate via the same
+    FactorizedEntropyModel and a Hamming-distortion-comparable X_hat, so
+    their (R, D) points are directly comparable on the same plot.
+    """
+
     def __init__(self, c_in, c_out, T, n_symbols=8, alphabet_size=16,
-                 hidden=64, embed_dim=8, tau_decay=0.5, v_th=1.0):
+                 hidden=64, embed_dim=8, tau_decay=0.5, v_th=1.0,
+                 quantizer_type="gumbel"):
         super().__init__()
         self.T = T
-        self.encoder = SNNEncoderCategorical(
-            c_in, hidden, n_symbols, alphabet_size, tau_decay, v_th)
-        self.entropy_model = FactorizedEntropyModel(n_symbols, alphabet_size)
-        self.decoder = CategoricalSNNDecoderProb(
-            alphabet_size, n_symbols, embed_dim, hidden, c_out, T,
-            tau_decay, v_th)
+        self.quantizer_type = quantizer_type
+
+        if quantizer_type == "gumbel":
+            self.encoder = SNNEncoderCategorical(
+                c_in, hidden, n_symbols, alphabet_size, tau_decay, v_th)
+            self.entropy_model = FactorizedEntropyModel(n_symbols, alphabet_size)
+            self.decoder = CategoricalSNNDecoderProb(
+                alphabet_size, n_symbols, embed_dim, hidden, c_out, T,
+                tau_decay, v_th)
+        elif quantizer_type in ("grid", "e8"):
+            self.encoder = SNNEncoderContinuous(c_in, hidden, n_symbols, tau_decay, v_th)
+            if quantizer_type == "grid":
+                self.quantizer = GridQuantizer(n_dims=n_symbols, levels=alphabet_size)
+            else:
+                self.quantizer = E8LatticeQuantizer(n_dims=n_symbols, levels=alphabet_size)
+            self.entropy_model = FactorizedEntropyModel(n_symbols, self.quantizer.alphabet_size)
+            self.decoder = ContinuousSNNDecoderProb(n_symbols, hidden, c_out, T, tau_decay, v_th)
+        else:
+            raise ValueError(f"unknown quantizer_type {quantizer_type!r}")
 
     def forward(self, x, tau_gumbel=1.0, hard=True):
-        logits = self.encoder(x)                              # (B, n, A)
-        z_soft, z_idx, z_st = gumbel_softmax_st(logits, tau_gumbel, hard)
-        rate_bits = self.entropy_model.rate_bits(z_st)         # (B,)
-        x_hat_probs = self.decoder(z_st)                       # (T, B, C_out)
-        return x_hat_probs, rate_bits, z_idx
+        if self.quantizer_type == "gumbel":
+            logits = self.encoder(x)                              # (B, n, A)
+            z_soft, z_idx, z_st = gumbel_softmax_st(logits, tau_gumbel, hard)
+            rate_bits = self.entropy_model.rate_bits(z_st)         # (B,)
+            x_hat_probs = self.decoder(z_st)                       # (T, B, C_out)
+            return x_hat_probs, rate_bits, z_idx
+
+        z = self.encoder(x)                                       # (B, n_symbols)
+        z_q, idx = self.quantizer(z)
+        if hard:
+            z_soft = self.quantizer.soft_onehot(z, tau=tau_gumbel)
+            z_hard = F.one_hot(idx, self.quantizer.alphabet_size).float()
+            z_st = z_soft + (z_hard - z_soft).detach()
+        else:
+            z_st = self.quantizer.soft_onehot(z, tau=tau_gumbel)
+        rate_bits = self.entropy_model.rate_bits(z_st)             # (B,)
+        x_hat_probs = self.decoder(z_q)                            # (T, B, C_out)
+        return x_hat_probs, rate_bits, idx
 
 
 def hamming_distortion(x, x_hat_probs):
@@ -241,17 +373,21 @@ def theoretical_RD_curve(p, n_points=200):
 # ----------------------------------------------------------------------
 
 def train_one_beta(beta, source, n_symbols=8, alphabet_size=16,
-                    epochs=300, lr=1e-3, device="cpu", eval_batches=8):
+                    epochs=300, lr=1e-3, device="cpu", eval_batches=8,
+                    quantizer_type="gumbel"):
     """source: a Source (see ltc_autoencoder.py) yielding (T, B, C) spike
     batches, e.g. RealSource("nmnist", ...). Its T and feature_dim fix the
-    pipeline's time horizon and channel count."""
+    pipeline's time horizon and channel count.
+    quantizer_type: "gumbel" (learned categorical), "grid" (uniform scalar
+    quantizer), or "e8" (E8 lattice vector quantizer) -- see RDPipeline."""
     torch.manual_seed(0)
     T, C = source.T, source.feature_dim
     model = RDPipeline(c_in=C, c_out=C, T=T, n_symbols=n_symbols,
-                        alphabet_size=alphabet_size).to(device)
+                        alphabet_size=alphabet_size,
+                        quantizer_type=quantizer_type).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
 
-    tau_start, tau_end = 1.5, 0.3  # Gumbel temperature annealing
+    tau_start, tau_end = 1.5, 0.3  # softmax/Gumbel temperature annealing
 
     train_iter = source.train_batches(epochs, device)
     for epoch in range(epochs):
@@ -287,17 +423,18 @@ def train_one_beta(beta, source, n_symbols=8, alphabet_size=16,
 # ----------------------------------------------------------------------
 
 def run_rd_sweep(source, betas=(0.5, 1, 2, 5, 10, 20, 50),
-                  epochs=300, device="cpu"):
+                  epochs=300, device="cpu", quantizer_type="gumbel"):
     """source fixes T and the channel count; its empirical spike probability
     (measured, not assumed) anchors the theoretical Bernoulli R(D) curve used
-    as a reference bound."""
+    as a reference bound. quantizer_type: see RDPipeline."""
     p = source.spike_prob(device)
     print(f"source={source.name}  T={source.T}  C={source.feature_dim}  "
-          f"empirical spike prob p={p:.4f}")
+          f"quantizer={quantizer_type}  empirical spike prob p={p:.4f}")
 
     learned_points = []
     for beta in betas:
-        _, R, D = train_one_beta(beta, source, epochs=epochs, device=device)
+        _, R, D = train_one_beta(beta, source, epochs=epochs, device=device,
+                                  quantizer_type=quantizer_type)
         learned_points.append((R, D))
         print(f"==> beta={beta:6.2f}  R={R:.4f} bits/bin  D={D:.4f}")
 
